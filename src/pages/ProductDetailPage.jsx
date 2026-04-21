@@ -198,8 +198,8 @@ export default function ProductDetailPage() {
     try {
       await addCartItem({
         productId: product.id,
-        optionName: selectedOption || undefined,
-        quantity: qty,
+        optionId:  product.options?.find(o => o.label === selectedOption)?.id ?? undefined,
+        quantity:  qty,
       }).unwrap()
       setAlertMsg('장바구니에 담겼습니다.')
       setAlertNav('/cart')
