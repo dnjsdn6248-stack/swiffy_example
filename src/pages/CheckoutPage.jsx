@@ -16,7 +16,7 @@ import { useCreateOrderMutation } from '@/api/orderApi'
 import { usePreparePaymentMutation } from '@/api/paymentApi'
 
 import { SHIPPING_FEE, SHIPPING_FREE_THRESHOLD } from '@/shared/utils/constants'
-import { useToast } from '@/hooks/useToast'
+import useToast from '@/hooks/useToast'
 
 const itemKey = (item) => `${item.productId}-${item.optionId ?? 'none'}`
 
