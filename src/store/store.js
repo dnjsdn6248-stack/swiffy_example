@@ -63,7 +63,7 @@ export const store = configureStore({
           'payload.createdAt',
           'payload.updatedAt',
         ],
-        ignoredPaths: ['order.lastCreatedOrder.createdAt'],
+        ignoredPaths: [],
       },
     }).concat(apiSlice.middleware, logoutMiddleware),
 

@@ -9,23 +9,27 @@ const normalizeOrder = (o) => ({
       ? o.createdAt.replace('T', ' ').slice(0, 19)
       : (o.date ?? ''),
   status: o.order_state ?? o.orderStatus ?? o.status,
-  ordererName: o.receiver_name ?? o.ordererName ?? o.buyerName ?? o.memberName ?? '',
-  paymentMethod: o.paymentMethod ?? o.paymentType ?? '',
+  ordererName: o.user_name ?? o.receiver_name ?? o.ordererName ?? o.buyerName ?? o.memberName ?? '',
+  paymentMethod: o.payment_method ?? o.paymentMethod ?? o.paymentType ?? '',
+  itemCount: o.total_item_count ?? null,
+  paidAmount: o.paid_amount ?? o.paidAmount ?? 0,
   couponDiscount: o.couponDiscountAmount ?? o.couponDiscount ?? 0,
   failedReason: o.failed_reason ?? null,
   failedAt: o.failed_at ?? null,
   items: (o.items ?? []).map((item) => ({
     productId: item.product_id ?? item.productId,
+    optionId: item.option_id ?? item.optionId ?? null,
     name: item.product_name ?? item.productName ?? item.name,
     option: item.option_name ?? item.optionName ?? item.option ?? '',
     qty: item.quantity ?? item.qty ?? 1,
     price: item.price ?? 0,
+    totalPrice: item.total_price ?? item.totalPrice ?? 0,
     img: item.imageUrl ?? item.img ?? null,
     trackingNo: item.trackingNumber ?? item.trackingNo ?? '',
     company: item.deliveryCompany ?? item.company ?? '',
     itemStatus: item.itemStatus ?? item.status ?? o.order_state ?? o.orderStatus ?? '',
   })),
-  productPrice: o.amount ?? o.productAmount ?? o.productPrice ?? 0,
+  productPrice: o.product_total_price ?? o.amount ?? o.productAmount ?? o.productPrice ?? 0,
   shippingPrice: o.shippingFee ?? o.shippingPrice ?? 0,
   discountPrice: o.discountAmount ?? o.discountPrice ?? 0,
   total: o.amount ?? o.totalAmount ?? o.total ?? 0,
@@ -103,22 +107,10 @@ export const orderApi = apiSlice.injectEndpoints({
       providesTags: (result, error, orderId) => [{ type: 'Order', id: `CS_${orderId}` }],
     }),
 
-    /**
-     * 주문 생성 — POST /orders
-     * 서버 응답: "{orderId}번 주문이 접수되었습니다. 현재 상태는 ORDER_CHECKED_OUT 입니다." (text)
-     * transformResponse로 orderId 추출
-     */
+    /** 주문 생성 — POST /orders → 201 Created { orderId } */
     createOrder: builder.mutation({
-      query: (body) => ({
-        url: '/orders',
-        method: 'POST',
-        body,
-        responseHandler: 'text',
-      }),
-      transformResponse: (text) => {
-        const match = /^(\d+)번/.exec(String(text).trim())
-        return { orderId: match ? Number(match[1]) : null }
-      },
+      query: (body) => ({ url: '/orders', method: 'POST', body }),
+      transformResponse: (res) => ({ orderId: res.orderId ?? res.order_id ?? null }),
       invalidatesTags: [{ type: 'Order', id: 'LIST' }],
       async onQueryStarted(_, { dispatch, queryFulfilled }) {
         try {

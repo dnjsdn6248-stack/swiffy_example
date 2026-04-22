@@ -7,7 +7,7 @@ const getCsrfToken = () => {
 }
 
 const rawBaseQuery = fetchBaseQuery({
-  baseUrl: import.meta.env.VITE_API_BASE_URL ?? 'https://localhost:8072/api/v1',
+  baseUrl: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8072/api/v1',
   credentials: 'include', // accessToken · refreshToken HttpOnly 쿠키 자동 전송
   prepareHeaders: (headers) => {
     const csrfToken = getCsrfToken()

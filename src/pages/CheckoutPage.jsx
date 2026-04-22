@@ -183,7 +183,8 @@ export default function CheckoutPage() {
     try {
       // 1. 주문 생성
       const orderResult = await createOrder({
-        user_id: user.userId,
+        user_id: Number(user.userId),
+        user_name: user.name ?? '',
         receiver_name: form.recipientName,
         receiver_phone: form.phone,
         receiver_addr: [form.postcode, form.baseAddress, form.extraAddress, form.detailAddress]
