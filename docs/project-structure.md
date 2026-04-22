@@ -1,6 +1,6 @@
 # 프로젝트 구조
 
-기준일: 2026-04-20 (GNB 리팩토링 반영)
+기준일: 2026-04-22 (결제 플로우·Cart/Order API 명세 반영)
 
 ---
 
@@ -16,6 +16,7 @@ src/
 │   ├── categoryApi.js            카테고리 엔드포인트 (Search Server)
 │   ├── cartApi.js                장바구니 엔드포인트
 │   ├── orderApi.js               주문 엔드포인트
+│   ├── paymentApi.js             결제 준비·승인 엔드포인트 (Toss Payments 브리지)
 │   ├── reviewApi.js              리뷰 엔드포인트
 │   ├── userApi.js                사용자 프로필·배송지 엔드포인트
 │   └── wishlistApi.js            위시리스트 엔드포인트
@@ -74,6 +75,8 @@ src/
 │   ├── SubscriptionPage.jsx      /subscription
 │   ├── CartPage.jsx              /cart (보호)
 │   ├── CheckoutPage.jsx          /checkout (보호)
+│   ├── PaymentSuccessPage.jsx    /payment/success (보호) — Toss 인증 성공 콜백, confirmPayment 호출
+│   ├── PaymentFailPage.jsx       /payment/fail (보호) — Toss 인증 실패 콜백, 오류 표시
 │   ├── OrderPage.jsx             /order/list (보호)
 │   ├── OrderDetailPage.jsx       /order/detail/:id (보호)
 │   ├── UserProfilePage.jsx       /mypage (보호)
@@ -121,7 +124,6 @@ BrowserRouter
         ├── <Layout>               Header + Outlet + Footer
         │   ├── /                  LandingPage
         │   ├── /product/list      StorePage
-        │   ├── /product/list/odog OdogPage
         │   ├── /subscription      SubscriptionPage
         │   ├── /product/detail/:id       ProductDetailPage
         │   ├── /subscription/detail/:id  ProductDetailPage (동일 컴포넌트)
@@ -134,6 +136,8 @@ BrowserRouter
         │   │
         │   ├── /cart              ProtectedRoute → CartPage
         │   ├── /checkout          ProtectedRoute → CheckoutPage
+        │   ├── /payment/success   ProtectedRoute → PaymentSuccessPage
+        │   ├── /payment/fail      ProtectedRoute → PaymentFailPage
         │   ├── /order/list        ProtectedRoute → OrderPage
         │   ├── /order/detail/:id  ProtectedRoute → OrderDetailPage
         │   ├── /mypage            ProtectedRoute → UserProfilePage
@@ -169,7 +173,7 @@ store = {
     selectedCategoryId: number | null,
   },
   cart: {
-    checkedItemIds: number[],       // 서버 isSelected 기준으로 동기화 — 직접 조작 금지
+    checkedItemIds: string[],       // `${productId}-${optionId ?? 'none'}` 형식 키 배열
   },
   order: {
     lastCreatedOrder: Order | null, // 주문완료 직후 임시 보관
@@ -210,13 +214,14 @@ store = {
 | `searchApi.js` | 검색·베스트셀러·배너·해시태그탭 | search-server | `Search` |
 | `categoryApi.js` | 카테고리 목록 (GNB·필터용) | search-server | `Category` |
 | `cartApi.js` | 장바구니 CRUD | cart-server | `Cart` |
-| `orderApi.js` | 주문 생성·조회·취소·환불 | order-server | `Order` |
+| `orderApi.js` | 주문 생성·조회·취소·이력 | order-server | `Order` |
+| `paymentApi.js` | 결제 준비·승인 (Toss Payments) | payment-server | `Payment` |
 | `reviewApi.js` | 리뷰 CRUD·도움돼요·홈 하이라이트 | review-server | `Review` |
 | `userApi.js` | 프로필·비밀번호·배송지 CRUD | user-server | `User`, `Address` |
 | `wishlistApi.js` | 위시리스트 CRUD | wishlist-server | `Wishlist` |
 
 > `tagTypes` 전체 목록 (`src/api/apiSlice.js`):  
-> `['Auth', 'Product', 'Category', 'Cart', 'Order', 'Review', 'User', 'Address', 'Wishlist', 'Search']`
+> `['Auth', 'Product', 'Category', 'Cart', 'Order', 'Review', 'User', 'Address', 'Wishlist', 'Search', 'Payment']`
 
 ---
 
@@ -242,7 +247,9 @@ GET /users/me ─────────►  로그인 사용자 정보 반환
 | 항목 | 내용 |
 |---|---|
 | 파일명 오타 | `UserAddressPage .jsx` (공백 포함) — import 시 주의 |
-| review.md · reviews.md | 두 파일이 중복 존재 (review.md가 최신) |
-| Mock 시스템 | 완전 제거됨 (2026-04). 실서버 직접 연동. `src/mock/` 폴더는 잔류할 수 있으나 어디에서도 import 안 됨 |
+| Mock 시스템 | 완전 제거됨 (2026-04). 실서버 직접 연동. |
 | MyPageLayout | CLAUDE.md 목표 아키텍처에는 존재하나 현재 미구현 (각 마이페이지는 독립 페이지) |
 | baseQuery.js | 별도 파일 없음 — withReauth 로직이 `src/api/apiSlice.js` 내부에 포함됨 |
+| createOrder 응답 | 서버가 text/plain 반환 — orderId를 정규식으로 파싱. 응답 포맷 변경 시 결제 플로우 중단됨 |
+| cancelOrder | 서버 saga 비활성화로 현재 409 반환. 취소 UI 구현 시 서버 상태 확인 필요 |
+| constants.js 누락 | `RETURN_DEADLINE_DAYS`, `ORDER_PAGE_SIZE`, `ORDER_STATUS` 등 order.md에 명시된 상수가 실제 코드에 없음 |

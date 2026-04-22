@@ -99,7 +99,6 @@ export default function CheckoutPage() {
     baseAddress: '',
     extraAddress: '',
     detailAddress: '',
-    deliveryMessage: '',
   })
 
   // 사용자 정보 자동 채움
@@ -184,28 +183,22 @@ export default function CheckoutPage() {
     try {
       // 1. 주문 생성
       const orderResult = await createOrder({
+        user_id: user.userId,
+        receiver_name: form.recipientName,
+        receiver_phone: form.phone,
+        receiver_addr: [form.postcode, form.baseAddress, form.extraAddress, form.detailAddress]
+          .filter(Boolean).join(' '),
         items: checkedItems.map((i) => ({
           productId: i.productId,
           optionId: i.optionId,
           quantity: i.quantity,
         })),
-        deliveryInfo: {
-          recipientName: form.recipientName,
-          phoneNumber: form.phone.replace(/-/g, ''),
-          postcode: form.postcode,
-          baseAddress: form.baseAddress,
-          detailAddress: form.detailAddress,
-          deliveryMessage: form.deliveryMessage,
-        },
-        paymentMethod: 'CARD',
-        couponId: null,
-        discountCode: null,
-        usedPoints: 0,
       }).unwrap()
 
-      const { orderId, totalAmount } = orderResult
+      const { orderId } = orderResult
+      if (!orderId) throw new Error('주문 ID를 확인할 수 없습니다.')
       const orderName = getOrderName()
-      const amount = totalAmount ?? finalAmount
+      const amount = finalAmount
 
       // 2. 결제 준비 (백엔드 레코드 생성)
       await preparePayment({
@@ -341,22 +334,6 @@ export default function CheckoutPage() {
                   placeholder="01012345678"
                 />
 
-                <label className="text-[14px] font-bold text-[#555]">배송메시지</label>
-                <div className="relative">
-                  <select
-                    value={form.deliveryMessage}
-                    onChange={(e) => setForm((f) => ({ ...f, deliveryMessage: e.target.value }))}
-                    className="w-full h-12 bg-white border border-[#eee] rounded-2xl px-5 font-bold text-[14px] outline-none appearance-none cursor-pointer focus:border-[#3ea76e] transition-all"
-                  >
-                    <option value="">-- 메시지 선택 (선택사항) --</option>
-                    <option>배송 전에 미리 연락바랍니다.</option>
-                    <option>부재 시 경비실에 맡겨주세요.</option>
-                    <option>부재 시 문 앞에 놓아주세요.</option>
-                    <option>빠른 배송 부탁드립니다.</option>
-                    <option>택배함에 보관해 주세요.</option>
-                  </select>
-                  <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#bbb] pointer-events-none" />
-                </div>
               </div>
             )}
           </section>

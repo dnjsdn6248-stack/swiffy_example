@@ -2,34 +2,38 @@ import { apiSlice } from './apiSlice'
 import { setLastCreatedOrder } from '@/features/order/orderSlice'
 
 const normalizeOrder = (o) => ({
-  id: o.orderId ?? o.id,
-  date: typeof o.createdAt === 'string'
-    ? o.createdAt.replace('T', ' ').slice(0, 19)
-    : (o.date ?? ''),
-  status: o.orderStatus ?? o.status,
-  ordererName: o.ordererName ?? o.buyerName ?? o.memberName ?? '',
+  id: o.order_id ?? o.orderId ?? o.id,
+  date: typeof o.time === 'string'
+    ? o.time.replace('T', ' ').slice(0, 19)
+    : typeof o.createdAt === 'string'
+      ? o.createdAt.replace('T', ' ').slice(0, 19)
+      : (o.date ?? ''),
+  status: o.order_state ?? o.orderStatus ?? o.status,
+  ordererName: o.receiver_name ?? o.ordererName ?? o.buyerName ?? o.memberName ?? '',
   paymentMethod: o.paymentMethod ?? o.paymentType ?? '',
   couponDiscount: o.couponDiscountAmount ?? o.couponDiscount ?? 0,
-  items: (o.orderItems ?? o.items ?? []).map((item) => ({
-    productId: item.productId,
-    name: item.productName ?? item.name,
-    option: item.optionName ?? item.option ?? '',
+  failedReason: o.failed_reason ?? null,
+  failedAt: o.failed_at ?? null,
+  items: (o.items ?? []).map((item) => ({
+    productId: item.product_id ?? item.productId,
+    name: item.product_name ?? item.productName ?? item.name,
+    option: item.option_name ?? item.optionName ?? item.option ?? '',
     qty: item.quantity ?? item.qty ?? 1,
-    price: item.price,
+    price: item.price ?? 0,
     img: item.imageUrl ?? item.img ?? null,
     trackingNo: item.trackingNumber ?? item.trackingNo ?? '',
     company: item.deliveryCompany ?? item.company ?? '',
-    itemStatus: item.itemStatus ?? item.status ?? o.orderStatus ?? o.status ?? '',
+    itemStatus: item.itemStatus ?? item.status ?? o.order_state ?? o.orderStatus ?? '',
   })),
-  productPrice: o.productAmount ?? o.productPrice ?? 0,
+  productPrice: o.amount ?? o.productAmount ?? o.productPrice ?? 0,
   shippingPrice: o.shippingFee ?? o.shippingPrice ?? 0,
   discountPrice: o.discountAmount ?? o.discountPrice ?? 0,
-  total: o.totalAmount ?? o.total ?? 0,
+  total: o.amount ?? o.totalAmount ?? o.total ?? 0,
   address: {
-    recipient: o.recipientName ?? o.receiver ?? '',
+    recipient: o.receiver_name ?? o.recipientName ?? o.receiver ?? '',
     zipCode: o.zipCode ?? o.postCode ?? '',
-    address: o.address ?? o.roadAddress ?? '',
-    phone: o.recipientPhone ?? o.receiverPhone ?? o.phone ?? '',
+    address: o.receiver_addr ?? o.address ?? o.roadAddress ?? '',
+    phone: o.receiver_phone ?? o.recipientPhone ?? o.receiverPhone ?? o.phone ?? '',
     memo: o.deliveryMemo ?? o.orderMemo ?? o.memo ?? '',
   },
 })
@@ -37,7 +41,7 @@ const normalizeOrder = (o) => ({
 export const orderApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
 
-    /** 주문 목록 */
+    /** 주문 목록 — params: { start_date?, end_date?, status?, page? } */
     getOrders: builder.query({
       query: (params) => ({ url: '/orders', params }),
       transformResponse: (res) => {
@@ -57,43 +61,81 @@ export const orderApi = apiSlice.injectEndpoints({
           : [{ type: 'Order', id: 'LIST' }],
     }),
 
-    /** 주문 상세 */
+    /** 주문 상세 — 아이템 목록 포함 */
     getOrderById: builder.query({
       query: (orderId) => ({ url: `/orders/${orderId}` }),
       transformResponse: (res) => normalizeOrder(res.data ?? res),
       providesTags: (result, error, orderId) => [{ type: 'Order', id: orderId }],
     }),
 
-    /** 주문 생성 — 완료 후 lastCreatedOrder 저장 */
+    /** 내 주문 상품 이력 (item 단위) — GET /orders/me/history */
+    getOrderHistory: builder.query({
+      query: () => ({ url: '/orders/me/history' }),
+      transformResponse: (res) => {
+        if (!res) return []
+        const list = Array.isArray(res) ? res : (res.data ?? [])
+        return list.map((item) => ({
+          id: item.id,
+          orderId: item.order_id ?? item.orderId,
+          productId: item.product_id ?? item.productId,
+          optionId: item.option_id ?? item.optionId,
+          productName: item.product_name ?? item.productName ?? '',
+          optionName: item.option_name ?? item.optionName ?? '',
+          price: item.price ?? 0,
+          quantity: item.quantity ?? 1,
+          totalPrice: item.total_price ?? item.totalPrice ?? 0,
+          status: item.order_state ?? item.orderStatus ?? item.status ?? '',
+          failedReason: item.failed_reason ?? null,
+          failedAt: item.failed_at ?? null,
+        }))
+      },
+      providesTags: [{ type: 'Order', id: 'HISTORY' }],
+    }),
+
+    /** 주문 취소/교환/반품 내역 — GET /orders/{order_id}/cs-history */
+    getOrderCsHistory: builder.query({
+      query: (orderId) => ({ url: `/orders/${orderId}/cs-history` }),
+      transformResponse: (res) => {
+        if (!res) return []
+        const list = Array.isArray(res) ? res : (res.data ?? [])
+        return list.map(normalizeOrder)
+      },
+      providesTags: (result, error, orderId) => [{ type: 'Order', id: `CS_${orderId}` }],
+    }),
+
+    /**
+     * 주문 생성 — POST /orders
+     * 서버 응답: "{orderId}번 주문이 접수되었습니다. 현재 상태는 ORDER_CHECKED_OUT 입니다." (text)
+     * transformResponse로 orderId 추출
+     */
     createOrder: builder.mutation({
-      query: (body) => ({ url: '/orders', method: 'POST', body }),
+      query: (body) => ({
+        url: '/orders',
+        method: 'POST',
+        body,
+        responseHandler: 'text',
+      }),
+      transformResponse: (text) => {
+        const match = /^(\d+)번/.exec(String(text).trim())
+        return { orderId: match ? Number(match[1]) : null }
+      },
       invalidatesTags: [{ type: 'Order', id: 'LIST' }],
       async onQueryStarted(_, { dispatch, queryFulfilled }) {
         try {
           const { data } = await queryFulfilled
-          dispatch(setLastCreatedOrder(data))
+          if (data.orderId) dispatch(setLastCreatedOrder(data))
         } catch {}
       },
     }),
 
-    /** 주문 취소 */
+    /** 주문 취소 — DELETE /orders/{order_id} (현재 서버 409 반환 중) */
     cancelOrder: builder.mutation({
-      query: ({ orderId, reason }) => ({
-        url: `/orders/${orderId}/cancel`,
-        method: 'PUT',
-        body: { reason },
+      query: (orderId) => ({
+        url: `/orders/${orderId}`,
+        method: 'DELETE',
+        responseHandler: 'text',
       }),
-      invalidatesTags: (result, error, { orderId }) => [{ type: 'Order', id: orderId }],
-    }),
-
-    /** 환불 요청 */
-    refundOrder: builder.mutation({
-      query: ({ orderId, body }) => ({
-        url: `/orders/${orderId}/refund`,
-        method: 'PUT',
-        body,
-      }),
-      invalidatesTags: (result, error, { orderId }) => [{ type: 'Order', id: orderId }],
+      invalidatesTags: (result, error, orderId) => [{ type: 'Order', id: orderId }],
     }),
 
   }),
@@ -102,7 +144,8 @@ export const orderApi = apiSlice.injectEndpoints({
 export const {
   useGetOrdersQuery,
   useGetOrderByIdQuery,
+  useGetOrderHistoryQuery,
+  useGetOrderCsHistoryQuery,
   useCreateOrderMutation,
   useCancelOrderMutation,
-  useRefundOrderMutation,
 } = orderApi

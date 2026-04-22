@@ -3,16 +3,14 @@ import { apiSlice } from './apiSlice'
 export const cartApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
 
-    // ── GET /cart/ — 장바구니 조회 ──────────────────────────────────────────
-    // 응답: { userId, items: [{ productId, optionId, quantity }] }
-    // ACTIVE Cart가 없으면 빈 목록 반환 (새로 생성 안 함)
+    // GET /cart/
     getCart: builder.query({
-      query: () => ({ url: '/cart/all' }),
+      query: () => ({ url: '/cart/' }),
       transformResponse: (res) => {
         const d = res.data ?? res
         return {
           userId: d.userId,
-          items:  (d.items ?? []).map((item) => ({
+          items: (d.items ?? []).map((item) => ({
             productId: item.productId,
             optionId:  item.optionId ?? null,
             quantity:  item.quantity ?? 1,
@@ -31,43 +29,44 @@ export const cartApi = apiSlice.injectEndpoints({
           : [{ type: 'Cart', id: 'LIST' }],
     }),
 
-    // ── POST /cart/additem — 상품 추가 ──────────────────────────────────────
-    // body: { productId, optionId?, quantity }
-    // 동일 productId+optionId가 이미 있으면 수량 합산
+    // POST /cart/additem
     addCartItem: builder.mutation({
       query: (body) => ({ url: '/cart/additem', method: 'POST', body }),
       invalidatesTags: [{ type: 'Cart', id: 'LIST' }],
     }),
 
-    // ── PUT /cart/item/quantity — 수량 변경 ────────────────────────────────
-    // body: { productId, optionId?, quantity }
-    // quantity = 0 이면 해당 아이템 삭제
+    // PUT /cart/frontend/item/quantity — quantity=0 이면 삭제
     updateCartItemQuantity: builder.mutation({
-      query: (body) => ({ url: '/cart/item/quantity', method: 'PUT', body }),
+      query: (body) => ({ url: '/cart/frontend/item/quantity', method: 'PUT', body }),
       invalidatesTags: [{ type: 'Cart', id: 'LIST' }],
     }),
 
-    // ── PUT /cart/item/option — 옵션 변경 ──────────────────────────────────
-    // body: { productId, optionId, newOptionId }
-    // 변경 대상이 이미 있으면 수량 합산 후 기존 항목 삭제
+    // PUT /cart/frontend/item/option
     updateCartItemOption: builder.mutation({
-      query: (body) => ({ url: '/cart/item/option', method: 'PUT', body }),
+      query: (body) => ({ url: '/cart/frontend/item/option', method: 'PUT', body }),
       invalidatesTags: [{ type: 'Cart', id: 'LIST' }],
     }),
 
-    // ── DELETE /cart/item — 단건 삭제 ──────────────────────────────────────
-    // body: { productId, optionId? }
+    // DELETE /cart/frontend/item
     removeCartItem: builder.mutation({
-      query: (body) => ({ url: '/cart/item', method: 'DELETE', body }),
+      query: (body) => ({ url: '/cart/frontend/item', method: 'DELETE', body }),
       invalidatesTags: [{ type: 'Cart', id: 'LIST' }],
     }),
 
-    // ── PUT /cart/item/select — 개별 선택 상태 서버 저장 ───────────────────
-    // body: { productId, optionId?, isSelected }
-    // 선택 상태는 응답에 포함되지 않음 — UI 상태는 Redux(cartSlice)가 관리
+    // PUT /cart/frontend/item/select — 개별 선택 상태 (응답에 선택 상태 미포함)
     selectCartItem: builder.mutation({
-      query: (body) => ({ url: '/cart/item/select', method: 'PUT', body }),
-      // 선택 상태가 응답에 없으므로 캐시 무효화 불필요
+      query: (body) => ({ url: '/cart/frontend/item/select', method: 'PUT', body }),
+    }),
+
+    // PUT /cart/frontend/item/select-all
+    selectAllCartItems: builder.mutation({
+      query: (body) => ({ url: '/cart/frontend/item/select-all', method: 'PUT', body }),
+    }),
+
+    // DELETE /cart/frontend/item/selected
+    removeSelectedCartItems: builder.mutation({
+      query: () => ({ url: '/cart/frontend/item/selected', method: 'DELETE' }),
+      invalidatesTags: [{ type: 'Cart', id: 'LIST' }],
     }),
 
   }),
@@ -80,4 +79,6 @@ export const {
   useUpdateCartItemOptionMutation,
   useRemoveCartItemMutation,
   useSelectCartItemMutation,
+  useSelectAllCartItemsMutation,
+  useRemoveSelectedCartItemsMutation,
 } = cartApi

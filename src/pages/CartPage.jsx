@@ -6,6 +6,8 @@ import {
   useUpdateCartItemOptionMutation,
   useRemoveCartItemMutation,
   useSelectCartItemMutation,
+  useSelectAllCartItemsMutation,
+  useRemoveSelectedCartItemsMutation,
 } from '../api/cartApi'
 import { useGetProductByIdQuery } from '../api/productApi'
 import { useAppDispatch } from '../hooks/useAppDispatch'
@@ -156,9 +158,11 @@ export default function CartPage() {
   const [priceMap, setPriceMap] = useState({})
 
   const { data, isLoading } = useGetCartQuery()
-  const [updateQty]  = useUpdateCartItemQuantityMutation()
-  const [removeItem] = useRemoveCartItemMutation()
-  const [selectItem] = useSelectCartItemMutation()
+  const [updateQty]        = useUpdateCartItemQuantityMutation()
+  const [removeItem]       = useRemoveCartItemMutation()
+  const [selectItem]       = useSelectCartItemMutation()
+  const [selectAll]        = useSelectAllCartItemsMutation()
+  const [removeSelected]   = useRemoveSelectedCartItemsMutation()
 
   const items      = data?.items ?? []
   const checkedIds = useAppSelector(selectCheckedItemIds)
@@ -188,10 +192,10 @@ export default function CartPage() {
   const handleToggleAll = () => {
     if (isSelectedAll) {
       dispatch(uncheckAllItems())
-      items.forEach((i) => selectItem({ productId: i.productId, optionId: i.optionId, isSelected: false }))
+      selectAll({ isSelectedAll: false })
     } else {
       dispatch(checkAllItems(items.map(itemKey)))
-      items.forEach((i) => selectItem({ productId: i.productId, optionId: i.optionId, isSelected: true }))
+      selectAll({ isSelectedAll: true })
     }
   }
 
@@ -216,12 +220,9 @@ export default function CartPage() {
   }
 
   const handleRemoveSelected = async () => {
-    const selected = items.filter((i) => checkedIds.includes(itemKey(i)))
-    if (selected.length === 0) return
+    if (checkedIds.length === 0) return
     dispatch(uncheckAllItems())
-    for (const item of selected) {
-      await removeItem({ productId: item.productId, optionId: item.optionId })
-    }
+    await removeSelected()
     setPage(1)
   }
 

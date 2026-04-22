@@ -1,133 +1,381 @@
-# Order 도메인
+# Order Server API 명세서
 
-기준일: 2026-04-17
-
-## 개요
-
-주문 생성·조회·취소·환불을 담당한다. 주문 완료 직후 주문확인 페이지 표시용 임시 데이터만 `orderSlice`가 보관하고, 나머지 서버 데이터는 RTK Query `api` 캐시에만 존재한다.
+> **Base URL:** `http://localhost:8072/api/v1`
 
 ---
 
-## 비즈니스 정책
+## `POST /orders`
 
-| 정책 | 값 | 코드 위치 |
-|---|---|---|
-| 무료배송 기준 | 50,000원 이상 | `src/shared/utils/constants.js` → `SHIPPING_FREE_THRESHOLD` |
-| 기본 배송비 | 5,000원 | `src/shared/utils/constants.js` → `SHIPPING_FEE` |
-| 취소·교환·반품 신청 기한 | 배송완료일 기준 3일 이내 | `src/shared/utils/constants.js` → `RETURN_DEADLINE_DAYS` |
-| 기본 페이지 크기 | 10건 | `src/shared/utils/constants.js` → `ORDER_PAGE_SIZE` |
+주문 checkout을 요청합니다.
 
----
+OrderServer는 요청받은 상품 ID, 옵션 ID, 수량을 기준으로 ProductServer에 동기 검증을 요청하고, Product 검증 결과 기준으로 주문과 주문 상세 snapshot을 저장합니다.
+이후 `OrderCheckedOut` outbox 이벤트를 저장합니다.
 
-## 주문 상태값
+### Request Body
 
-```js
-ORDER_STATUS = {
-  PENDING:    '입금전',
-  PREPARING:  '배송준비중',
-  SHIPPING:   '배송중',
-  DELIVERED:  '배송완료',
-  CANCELLED:  '취소',
-  EXCHANGED:  '교환',
-  REFUNDED:   '반품',
-}
-```
-
-코드 위치: `src/shared/utils/constants.js` → `ORDER_STATUS`
-
----
-
-## 금액 계산
-
-```
-최종 결제금액 = 상품금액 + 배송비 - 쿠폰할인 - 할인코드할인 - 적립금사용액
-
-배송비: calcShippingFee(상품금액)  // formatters.js (SHIPPING_FREE_THRESHOLD 기준)
-```
-
----
-
-## 상태 구조
-
-```js
-// orderSlice — UI 상태만
-order
-├── lastCreatedOrder: Order | null   // 주문 완료 직후 임시 보관 (주문완료 페이지용)
-└── pagination: { page: 1, size: ORDER_PAGE_SIZE }
-
-// store.js serializableCheck 예외 등록됨
-ignoredPaths: ['order.lastCreatedOrder.createdAt']
-```
-
----
-
-## Order 데이터 구조 (normalizeOrder 적용 후)
-
-```js
+```json
 {
-  id: number,
-  date: string,           // createdAt 날짜 부분 (YYYY-MM-DD)
-  status: string,         // orderStatus
-  items: [{
-    productId, name, option, qty, price, img
-  }],
-  productPrice: number,   // productAmount
-  shippingPrice: number,  // shippingFee
-  discountPrice: number,  // discountAmount
-  total: number,          // totalAmount
+  "user_id": 1,
+  "receiver_name": "홍길동",
+  "receiver_phone": "010-1234-5678",
+  "receiver_addr": "서울특별시 강남구 테헤란로 123",
+  "items": [
+    {
+      "productId": 10,
+      "optionId": 101,
+      "quantity": 2
+    },
+    {
+      "productId": 11,
+      "optionId": 201,
+      "quantity": 1
+    }
+  ]
 }
 ```
 
----
+### Success Response
 
-## API 엔드포인트 (`src/api/orderApi.js`)
+- **Code:** `201 Created`
 
-`apiSlice.injectEndpoints()`로 정의.
-
-| 훅 | 메서드 | 경로 | 설명 |
-|---|---|---|---|
-| `useGetOrdersQuery(params)` | GET | `/orders` | 목록 — `{ pagination, status, period }` 파라미터. 응답: `{ content, totalPages, totalElements }` |
-| `useGetOrderByIdQuery(orderId)` | GET | `/orders/:orderId` | 상세 |
-| `useCreateOrderMutation` | POST | `/orders` | 주문 생성 → `setLastCreatedOrder` dispatch |
-| `useCancelOrderMutation` | PUT | `/orders/:orderId/cancel` | 취소 — `{ orderId, reason }` |
-| `useRefundOrderMutation` | PUT | `/orders/:orderId/refund` | 환불 요청 — `{ orderId, body }` |
-
----
-
-## 주문 생성 흐름
-
+```text
+1번 주문이 접수되었습니다. 현재 상태는 ORDER_CHECKED_OUT 입니다.
 ```
-CheckoutPage
-  1. 배송지 입력 (받는사람 / 주소검색 / 휴대폰 / 배송메시지)
-  2. 할인/부가결제 (할인코드 / 쿠폰 / 적립금)
-  3. 결제수단 선택
-  4. 이용약관 동의 (필수) → 동의 전까지 "결제하기" 버튼 비활성
-  5. useCreateOrderMutation 호출
-  6. 성공 → setLastCreatedOrder dispatch → 주문완료 페이지
+
+### Error Response
+
+- **Code:** `500 Internal Server Error`
+
+```text
+주문 처리 실패: 주문 처리 실패
 ```
 
 ---
 
-## 목록 필터링
+## `GET /orders`
 
-| 파라미터 | 선택지 |
-|---|---|
-| `status` | 전체·입금전·배송준비중·배송중·배송완료·취소·교환·반품 |
-| `period` | 오늘·1개월·3개월·6개월·기간설정 |
+사용자의 주문 목록을 조회합니다.
 
-필터 값은 서버 파라미터로 전달 (클라이언트 필터링 금지).
+### Headers
+
+| Name        | Type   | Required | Description |
+| :---------- | :----- | :------: | :---------- |
+| `X-User-Id` | `Long` |    ✅    | 사용자 ID   |
+
+### Query Parameters
+
+| Name         | Type         | Required | Description               |
+| :----------- | :----------- | :------: | :------------------------ |
+| `start_date` | `LocalDate`  |    ❌    | 조회 시작일, `yyyy-MM-dd` |
+| `end_date`   | `LocalDate`  |    ❌    | 조회 종료일, `yyyy-MM-dd` |
+| `status`     | `OrderState` |    ❌    | 주문 상태                 |
+| `page`       | `int`        |    ❌    | 페이지 번호, 기본값 `0`   |
+
+### Request Example
+
+```http
+GET /api/v1/orders?start_date=2026-04-01&end_date=2026-04-20&status=ORDER_COMPLETED&page=0
+X-User-Id: 1
+```
+
+### Success Response
+
+- **Code:** `200 OK`
+
+```json
+{
+  "content": [
+    {
+      "order_id": 1,
+      "user_id": 1,
+      "amount": 35000,
+      "receiver_name": "홍길동",
+      "receiver_phone": "010-1234-5678",
+      "receiver_addr": "서울특별시 강남구 테헤란로 123",
+      "delete_yn": "N",
+      "time": "2026-04-20T14:30:00",
+      "order_state": "ORDER_COMPLETED",
+      "failed_reason": null,
+      "failed_at": null
+    }
+  ],
+  "pageable": {
+    "pageNumber": 0,
+    "pageSize": 20
+  },
+  "totalElements": 1,
+  "totalPages": 1,
+  "last": true,
+  "first": true,
+  "size": 20,
+  "number": 0,
+  "numberOfElements": 1,
+  "empty": false
+}
+```
+
+### Error Response
+
+- **Code:** `500 Internal Server Error`
+
+```text
+주문 목록 조회 실패
+```
 
 ---
 
-## 액션 & 셀렉터
+## `GET /orders/{order_id}`
 
-```js
-// Actions
-setLastCreatedOrder(order)    // createOrder 성공 후 자동 호출
-clearLastCreatedOrder()       // 주문완료 페이지 언마운트 시 호출
-setOrderPage(page)
+주문 상세 정보를 조회합니다.
 
-// Selectors
-selectLastCreatedOrder(state)
-selectOrderPagination(state)
+### Path Parameters
+
+| Name       | Type   | Required | Description |
+| :--------- | :----- | :------: | :---------- |
+| `order_id` | `Long` |    ✅    | 주문 ID     |
+
+### Success Response
+
+- **Code:** `200 OK`
+
+```json
+{
+  "order_id": 1,
+  "user_id": 1,
+  "amount": 35000,
+  "receiver_name": "홍길동",
+  "receiver_phone": "010-1234-5678",
+  "receiver_addr": "서울특별시 강남구 테헤란로 123",
+  "delete_yn": "N",
+  "time": "2026-04-20T14:30:00",
+  "order_state": "PAYMENT_FAILED",
+  "failed_reason": "카드 한도 초과",
+  "failed_at": "2026-04-20T14:35:00",
+  "items": [
+    {
+      "product_id": 10,
+      "option_id": 101,
+      "product_name": "어글어글 동물복지 연어마들렌",
+      "option_name": "단품",
+      "price": 17500,
+      "quantity": 2,
+      "total_price": 35000
+    }
+  ]
+}
+```
+
+### Error Response
+
+- **Code:** `404 Not Found`
+
+```text
+해당 주문을 찾을 수 없습니다.
+```
+
+- **Code:** `500 Internal Server Error`
+
+```text
+주문 상세 조회 실패
+```
+
+---
+
+## `GET /orders/me/history`
+
+로그인 사용자의 주문 상품 내역을 조회합니다.
+
+주문 단위가 아니라 주문 상세 item 단위로 이력을 반환합니다.
+
+### Headers
+
+| Name        | Type   | Required | Description |
+| :---------- | :----- | :------: | :---------- |
+| `X-User-Id` | `Long` |    ✅    | 사용자 ID   |
+
+### Request Example
+
+```http
+GET /api/v1/orders/me/history
+X-User-Id: 1
+```
+
+### Success Response
+
+- **Code:** `200 OK`
+
+```json
+[
+  {
+    "id": 1,
+    "user_id": 1,
+    "order_id": 10,
+    "product_id": 100,
+    "option_id": 1001,
+    "product_name": "어글어글 동물복지 연어마들렌",
+    "option_name": "단품",
+    "price": 17500,
+    "quantity": 2,
+    "total_price": 35000,
+    "order_state": "ORDER_COMPLETED",
+    "failed_reason": null,
+    "failed_at": null
+  }
+]
+```
+
+### No Content Response
+
+- **Code:** `204 No Content`
+
+사용자의 주문 내역이 없는 경우입니다.
+
+### Error Response
+
+- **Code:** `500 Internal Server Error`
+
+응답 body 없음.
+
+---
+
+## `GET /orders/history/{user_id}`
+
+특정 사용자의 주문 상품 내역을 조회합니다.
+
+> Deprecated API입니다. 사용자용 API는 `GET /orders/me/history` 사용을 권장합니다.
+
+### Path Parameters
+
+| Name      | Type   | Required | Description |
+| :-------- | :----- | :------: | :---------- |
+| `user_id` | `Long` |    ✅    | 사용자 ID   |
+
+### Success Response
+
+- **Code:** `200 OK`
+
+```json
+[
+  {
+    "id": 1,
+    "user_id": 1,
+    "order_id": 10,
+    "product_id": 100,
+    "option_id": 1001,
+    "product_name": "어글어글 동물복지 연어마들렌",
+    "option_name": "단품",
+    "price": 17500,
+    "quantity": 2,
+    "total_price": 35000,
+    "order_state": "ORDER_COMPLETED",
+    "failed_reason": null,
+    "failed_at": null
+  }
+]
+```
+
+### No Content Response
+
+- **Code:** `204 No Content`
+
+사용자의 주문 내역이 없는 경우입니다.
+
+---
+
+## `DELETE /orders/{order_id}`
+
+주문 취소를 요청합니다.
+
+현재 코드 기준으로 주문 취소 saga는 비활성화되어 있어 정상적으로 취소 요청이 접수되지 않고 `409 Conflict`가 반환됩니다.
+
+### Path Parameters
+
+| Name       | Type   | Required | Description |
+| :--------- | :----- | :------: | :---------- |
+| `order_id` | `Long` |    ✅    | 주문 ID     |
+
+### Success Response
+
+- **Code:** `202 Accepted`
+
+```text
+1번 주문 취소 요청이 접수되었습니다.
+```
+
+### Current Behavior
+
+- **Code:** `409 Conflict`
+
+```text
+주문 취소 saga는 현재 이벤트 흐름에서 비활성화되어 있습니다.
+```
+
+### Error Response
+
+- **Code:** `404 Not Found`
+
+```text
+해당 주문을 찾을 수 없습니다.
+```
+
+- **Code:** `500 Internal Server Error`
+
+```text
+취소 처리 중 오류가 발생했습니다.
+```
+
+---
+
+## `GET /orders/{order_id}/cs-history`
+
+주문 취소/교환/반품 내역을 조회합니다.
+
+현재 `OrderService.getCsHistory()`는 빈 리스트를 반환하므로, 주문이 존재하면 `204 No Content`가 반환됩니다.
+
+### Path Parameters
+
+| Name       | Type   | Required | Description |
+| :--------- | :----- | :------: | :---------- |
+| `order_id` | `Long` |    ✅    | 주문 ID     |
+
+### Success Response
+
+- **Code:** `200 OK`
+
+```json
+[
+  {
+    "order_id": 1,
+    "user_id": 1,
+    "amount": 35000,
+    "receiver_name": "홍길동",
+    "receiver_phone": "010-1234-5678",
+    "receiver_addr": "서울특별시 강남구 테헤란로 123",
+    "delete_yn": "N",
+    "time": "2026-04-20T14:30:00",
+    "order_state": "ORDER_COMPLETED",
+    "failed_reason": null,
+    "failed_at": null
+  }
+]
+```
+
+### Current Behavior
+
+- **Code:** `204 No Content`
+
+현재 구현상 반환 데이터가 없습니다.
+
+### Error Response
+
+- **Code:** `404 Not Found`
+
+```text
+해당 주문을 찾을 수 없습니다.
+```
+
+- **Code:** `500 Internal Server Error`
+
+```text
+주문 취소/교환/반품 내역 조회 실패
 ```
