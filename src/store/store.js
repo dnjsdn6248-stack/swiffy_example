@@ -23,6 +23,7 @@ import '@/api/orderApi'
 import '@/api/reviewApi'
 import '@/api/wishlistApi'
 import '@/api/searchApi'
+import '@/api/paymentApi'
 
 /**
  * logout 액션 발생 시 getMe 캐시를 null로 초기화

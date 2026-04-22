@@ -14,6 +14,8 @@ import CartPage from './pages/CartPage'
 import BrandStoryPage from './pages/BrandStoryPage'
 import BestSellerPage from './pages/BestSellerPage'
 import CheckoutPage from './pages/CheckoutPage'
+import PaymentSuccessPage from './pages/PaymentSuccessPage'
+import PaymentFailPage from './pages/PaymentFailPage'
 import UserProfilePage from './pages/UserProfilePage'
 import ProfileModifyPage from './pages/ProfileModifyPage'
 import WishListPage from './pages/WishListPage'
@@ -48,6 +50,8 @@ export default function Router() {
             {/* 보호된 라우트 */}
             <Route path="/cart" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
             <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
+            <Route path="/payment/success" element={<ProtectedRoute><PaymentSuccessPage /></ProtectedRoute>} />
+            <Route path="/payment/fail" element={<ProtectedRoute><PaymentFailPage /></ProtectedRoute>} />
             <Route path="/order/list" element={<ProtectedRoute><OrderPage /></ProtectedRoute>} />
             <Route path="/order/detail/:id" element={<ProtectedRoute><OrderDetailPage /></ProtectedRoute>} />
             <Route path="/mypage" element={<ProtectedRoute><UserProfilePage /></ProtectedRoute>} />
