@@ -36,18 +36,18 @@ user-invocable: false
 게이트웨이가 경로 prefix로 백엔드 서버를 라우팅한다.  
 프론트는 게이트웨이 단일 엔드포인트만 사용.
 
-| 경로 prefix | 담당 서버 | API 파일 |
-|---|---|---|
-| `/auth/*` | auth-server | `authApi.js` |
-| `/users/*` | user-server | `authApi.js`, `userApi.js` |
-| `/csrf` | auth-server | `authApi.js` |
-| `/products/*` | product-server | `productApi.js` |
-| `/main/*` | product-server | `productApi.js` (랜딩페이지 전용) |
-| `/search/*` | search-server | `searchApi.js`, `categoryApi.js` |
-| `/cart/*` | cart-server | `cartApi.js` |
-| `/orders/*` | order-server | `orderApi.js` |
-| `/reviews/*` | review-server | `reviewApi.js` |
-| `/wishlists/*` | wishlist-server | `wishlistApi.js` |
+| 경로 prefix    | 담당 서버       | API 파일                          |
+| -------------- | --------------- | --------------------------------- |
+| `/auth/*`      | auth-server     | `authApi.js`                      |
+| `/users/*`     | user-server     | `authApi.js`, `userApi.js`        |
+| `/csrf`        | auth-server     | `authApi.js`                      |
+| `/products/*`  | product-server  | `productApi.js`                   |
+| `/main/*`      | product-server  | `productApi.js` (랜딩페이지 전용) |
+| `/search/*`    | search-server   | `searchApi.js`, `categoryApi.js`  |
+| `/cart/*`      | cart-server     | `cartApi.js`                      |
+| `/orders/*`    | order-server    | `orderApi.js`                     |
+| `/reviews/*`   | review-server   | `reviewApi.js`                    |
+| `/wishlists/*` | wishlist-server | `wishlistApi.js`                  |
 
 ---
 
@@ -55,14 +55,14 @@ user-invocable: false
 
 ```js
 const rawBaseQuery = fetchBaseQuery({
-  baseUrl: import.meta.env.VITE_API_BASE_URL ?? 'https://localhost:8072/api/v1',
-  credentials: 'include',  // HttpOnly 쿠키 자동 전송
+  baseUrl: import.meta.env.VITE_API_BASE_URL ?? "https://localhost:8072/api/v1",
+  credentials: "include", // HttpOnly 쿠키 자동 전송
   prepareHeaders: (headers) => {
-    const csrfToken = getCsrfToken()
-    if (csrfToken) headers.set('X-XSRF-TOKEN', csrfToken)
-    return headers
+    const csrfToken = getCsrfToken();
+    if (csrfToken) headers.set("X-XSRF-TOKEN", csrfToken);
+    return headers;
   },
-})
+});
 ```
 
 ---
@@ -71,7 +71,7 @@ const rawBaseQuery = fetchBaseQuery({
 
 ```bash
 # .env
-VITE_API_BASE_URL=http://localhost:8072/api/v1
+VITE_API_BASE_URL=https://localhost:8072/api/v1
 ```
 
 개발·스테이징·프로덕션 환경별로 게이트웨이 주소만 교체하면 된다.
@@ -94,17 +94,17 @@ VITE_API_BASE_URL=http://localhost:8072/api/v1
 ```js
 // 공통 페이지 응답 (searchApi.js 패턴)
 const normalizePage = (res, mapFn) => ({
-  content:       (res.data ?? []).map(mapFn),
-  totalPages:    res.totalPages    ?? 1,
+  content: (res.data ?? []).map(mapFn),
+  totalPages: res.totalPages ?? 1,
   totalElements: res.totalElements ?? 0,
-  currentPage:   res.currentPage   ?? 0,
-})
+  currentPage: res.currentPage ?? 0,
+});
 
 // 단건 응답 (Result 래퍼)
-transformResponse: (res) => res.data   // { message, status, data: {...} }
+transformResponse: (res) => res.data; // { message, status, data: {...} }
 
 // 직접 배열 반환 (카테고리 API)
-transformResponse: (res) => res.data ?? []
+transformResponse: (res) => res.data ?? [];
 ```
 
 ---

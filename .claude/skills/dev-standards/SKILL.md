@@ -12,16 +12,16 @@ user-invocable: false
 
 ## 기술 스택 (고정)
 
-| 영역 | 기술 | 비고 |
-|---|---|---|
-| UI 라이브러리 | React 19 | JSX |
-| 번들러 | Vite | `vite.config.js` |
-| 상태 관리 | Redux Toolkit + RTK Query | |
-| 스타일링 | Tailwind CSS v4 + daisyUI v5 (거의 비활성화) | `src/index.css` |
-| 라우팅 | React Router DOM v7 | `src/router.jsx` |
-| 언어 | **JavaScript (JSX)** — TypeScript 금지 | |
-| HTTP | **RTK Query (fetchBaseQuery)** — Axios 금지 | |
-| 경로 별칭 | `@/` → `src/` | `vite.config.js` |
+| 영역          | 기술                                         | 비고             |
+| ------------- | -------------------------------------------- | ---------------- |
+| UI 라이브러리 | React 19                                     | JSX              |
+| 번들러        | Vite                                         | `vite.config.js` |
+| 상태 관리     | Redux Toolkit + RTK Query                    |                  |
+| 스타일링      | Tailwind CSS v4 + daisyUI v5 (거의 비활성화) | `src/index.css`  |
+| 라우팅        | React Router DOM v7                          | `src/router.jsx` |
+| 언어          | **JavaScript (JSX)** — TypeScript 금지       |                  |
+| HTTP          | **RTK Query (fetchBaseQuery)** — Axios 금지  |                  |
+| 경로 별칭     | `@/` → `src/`                                | `vite.config.js` |
 
 ---
 
@@ -49,13 +49,13 @@ interface ApiResponse<T> { data: T }
 
 ```js
 // ✅ RTK Query 훅으로만 데이터 페칭
-const { data, isLoading } = useSearchProductsQuery({ category: 'SNACK_JERKY' })
-const [createOrder] = useCreateOrderMutation()
+const { data, isLoading } = useSearchProductsQuery({ category: "SNACK_JERKY" });
+const [createOrder] = useCreateOrderMutation();
 
 // ❌ 절대 사용 금지
-import axios from 'axios'
-axios.get('/products')
-fetch('/api/products')    // RTK Query 외부에서 직접 fetch 금지
+import axios from "axios";
+axios.get("/products");
+fetch("/api/products"); // RTK Query 외부에서 직접 fetch 금지
 ```
 
 ---
@@ -64,11 +64,11 @@ fetch('/api/products')    // RTK Query 외부에서 직접 fetch 금지
 
 ```js
 // ✅
-const apiUrl = import.meta.env.VITE_API_BASE_URL
+const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
 // ❌
-const apiUrl = process.env.REACT_APP_API_URL  // CRA 방식
-const apiUrl = process.env.VITE_API_BASE_URL  // Node 방식
+const apiUrl = process.env.REACT_APP_API_URL; // CRA 방식
+const apiUrl = process.env.VITE_API_BASE_URL; // Node 방식
 ```
 
 - 모든 클라이언트 환경 변수는 `VITE_` 접두어 필수
@@ -76,7 +76,7 @@ const apiUrl = process.env.VITE_API_BASE_URL  // Node 방식
 
 ```bash
 # .env
-VITE_API_BASE_URL=http://localhost:8072/api/v1
+VITE_API_BASE_URL=https://localhost:8072/api/v1
 ```
 
 ---
@@ -85,14 +85,14 @@ VITE_API_BASE_URL=http://localhost:8072/api/v1
 
 ```js
 // ❌ 토큰 로컬 저장 — 절대 금지
-localStorage.setItem('access_token', token)
-sessionStorage.setItem('refresh_token', token)
+localStorage.setItem("access_token", token);
+sessionStorage.setItem("refresh_token", token);
 
 // ❌ OAuth Client Secret — 절대 금지
-const CLIENT_SECRET = 'secret'
+const CLIENT_SECRET = "secret";
 
 // ❌ window.location.href 내부 라우팅에 사용
-window.location.href = '/mypage'   // OAuth 리다이렉트 제외
+window.location.href = "/mypage"; // OAuth 리다이렉트 제외
 ```
 
 ---
@@ -117,37 +117,38 @@ window.location.href = '/order/list'   // 외부 OAuth 리다이렉트 제외하
 
 ## 파일 위치 규칙
 
-| 종류 | 위치 | 예시 |
-|---|---|---|
-| 페이지 컴포넌트 | `src/pages/` | `StorePage.jsx` |
-| 인증 관련 컴포넌트·훅 | `src/features/auth/` | `LoginPage.jsx`, `useAuth.js` |
-| 홈 섹션 컴포넌트 | `src/features/components/home/` | `BestSellers.jsx` |
-| 공유 레이아웃 컴포넌트 | `src/features/components/layout/` | `Header.jsx` |
-| 공유 UI 컴포넌트 | `src/features/components/ui/` | `Toast.jsx` |
-| 공유 유틸·헬퍼 | `src/shared/` | `Spinner.jsx`, `formatters.js` |
-| API 파일 | `src/api/` | `productApi.js`, `searchApi.js` |
-| Redux 슬라이스 | `src/features/{domain}/` | `productSlice.js` |
-| 커스텀 훅 | `src/hooks/` | `useAppSelector.js` |
-| Redux store | `src/store/store.js` | (경로 주의: `src/app/` 아님) |
-| 라우터 | `src/router.jsx` | (경로 주의: `App.jsx` 아님) |
+| 종류                   | 위치                              | 예시                            |
+| ---------------------- | --------------------------------- | ------------------------------- |
+| 페이지 컴포넌트        | `src/pages/`                      | `StorePage.jsx`                 |
+| 인증 관련 컴포넌트·훅  | `src/features/auth/`              | `LoginPage.jsx`, `useAuth.js`   |
+| 홈 섹션 컴포넌트       | `src/features/components/home/`   | `BestSellers.jsx`               |
+| 공유 레이아웃 컴포넌트 | `src/features/components/layout/` | `Header.jsx`                    |
+| 공유 UI 컴포넌트       | `src/features/components/ui/`     | `Toast.jsx`                     |
+| 공유 유틸·헬퍼         | `src/shared/`                     | `Spinner.jsx`, `formatters.js`  |
+| API 파일               | `src/api/`                        | `productApi.js`, `searchApi.js` |
+| Redux 슬라이스         | `src/features/{domain}/`          | `productSlice.js`               |
+| 커스텀 훅              | `src/hooks/`                      | `useAppSelector.js`             |
+| Redux store            | `src/store/store.js`              | (경로 주의: `src/app/` 아님)    |
+| 라우터                 | `src/router.jsx`                  | (경로 주의: `App.jsx` 아님)     |
 
 ---
 
 ## 파일 네이밍 컨벤션
 
-| 종류 | 네이밍 | 예시 |
-|---|---|---|
-| 컴포넌트 | `PascalCase.jsx` | `ProductDetailPage.jsx` |
-| 훅 | `useCamelCase.js` | `useStorePageController.js` |
-| API 슬라이스 | `{domain}Api.js` | `searchApi.js` |
-| Redux 슬라이스 | `{domain}Slice.js` | `productSlice.js` |
-| 유틸·상수 | `camelCase.js` | `formatters.js`, `oauth2.js` |
+| 종류           | 네이밍             | 예시                         |
+| -------------- | ------------------ | ---------------------------- |
+| 컴포넌트       | `PascalCase.jsx`   | `ProductDetailPage.jsx`      |
+| 훅             | `useCamelCase.js`  | `useStorePageController.js`  |
+| API 슬라이스   | `{domain}Api.js`   | `searchApi.js`               |
+| Redux 슬라이스 | `{domain}Slice.js` | `productSlice.js`            |
+| 유틸·상수      | `camelCase.js`     | `formatters.js`, `oauth2.js` |
 
 ---
 
 ## 작업 시작 체크리스트
 
 작업 시작 전 반드시 수행:
+
 - [ ] `.claude/rules/` 확인 (doc-sync 우선)
 - [ ] 관련 `docs/domain/*.md` 비즈니스 명세 읽기 (**Docs First**)
 - [ ] 수정할 파일 `Read` 도구로 먼저 읽기

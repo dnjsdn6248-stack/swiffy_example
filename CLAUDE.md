@@ -22,21 +22,21 @@ npm run preview    # 빌드 결과 미리보기
 npm run lint       # ESLint
 ```
 
-`.env.example`을 `.env`로 복사 후 `VITE_API_BASE_URL` 설정 (기본값: `http://localhost:8080/api`).
+`.env.example`을 `.env`로 복사 후 `VITE_API_BASE_URL` 설정 (기본값: `https://localhost:8080/api`).
 
 ---
 
 ## 불변 규칙 (`.claude/rules/tech-standards.md`)
 
-| 규칙 | 내용 |
-|---|---|
-| **No Axios** | HTTP 통신은 RTK Query만 (`fetchBaseQuery` / `mockBaseQuery`) |
-| **Pure JS** | TypeScript 문법 금지 (`.ts`, `.tsx` 파일 생성 금지) |
+| 규칙                 | 내용                                                                      |
+| -------------------- | ------------------------------------------------------------------------- |
+| **No Axios**         | HTTP 통신은 RTK Query만 (`fetchBaseQuery` / `mockBaseQuery`)              |
+| **Pure JS**          | TypeScript 문법 금지 (`.ts`, `.tsx` 파일 생성 금지)                       |
 | **No Token Storage** | 토큰을 `localStorage` · `sessionStorage`에 저장 금지 — HttpOnly 쿠키 사용 |
-| **withReauth** | `baseQuery`는 반드시 `withReauth`로 감싸기 |
-| **No OAuth Secret** | Client ID · Secret 프론트 코드 포함 금지 |
-| **SPA Nav** | 내부 이동은 `useNavigate` · `<Link>` 사용 (`window.location.href` 금지) |
-| **Vite Env** | 환경변수는 `import.meta.env.VITE_*` 사용 |
+| **withReauth**       | `baseQuery`는 반드시 `withReauth`로 감싸기                                |
+| **No OAuth Secret**  | Client ID · Secret 프론트 코드 포함 금지                                  |
+| **SPA Nav**          | 내부 이동은 `useNavigate` · `<Link>` 사용 (`window.location.href` 금지)   |
+| **Vite Env**         | 환경변수는 `import.meta.env.VITE_*` 사용                                  |
 
 ---
 
@@ -128,7 +128,6 @@ Redux: { user } 만 저장. 토큰 절대 저장 금지.
 
 Tailwind CSS v4`tailwind.config.js` 없음 — `src/index.css`에서 설정.
 
-
 - 인라인 `style={}` 속성 금지
 - 모바일 퍼스트 (`grid-cols-2 sm:grid-cols-3 lg:grid-cols-4`)
 
@@ -149,11 +148,11 @@ Tailwind CSS v4`tailwind.config.js` 없음 — `src/index.css`에서 설정.
 
 현재 코드는 아직 목표 아키텍처로 이행 중이다. 작업 전 아래 사항을 인지할 것:
 
-| 항목 | 현재 코드 | 목표 |
-|---|---|---|
-| 토큰 저장 | `localStorage` + Redux state | HttpOnly 쿠키만 |
-| API 구조 | 도메인별 `createApi` 다중 호출 | 단일 `apiSlice` + `injectEndpoints` |
-| Mock 접근 | 컴포넌트에서 `src/mock/` 직접 import | `mockBaseQuery.js` 경유 |
-| 인증 슬라이스 | `setCredentials / clearCredentials / setToken` | `setUser / setInitialized / logout` |
-| 디렉토리 | flat (`src/pages/`, `src/features/components/`) | Feature-based (`src/features/{domain}/`) |
-| 비즈니스 상수 | 컴포넌트 내 하드코딩 | `src/shared/utils/constants.js` |
+| 항목          | 현재 코드                                       | 목표                                     |
+| ------------- | ----------------------------------------------- | ---------------------------------------- |
+| 토큰 저장     | `localStorage` + Redux state                    | HttpOnly 쿠키만                          |
+| API 구조      | 도메인별 `createApi` 다중 호출                  | 단일 `apiSlice` + `injectEndpoints`      |
+| Mock 접근     | 컴포넌트에서 `src/mock/` 직접 import            | `mockBaseQuery.js` 경유                  |
+| 인증 슬라이스 | `setCredentials / clearCredentials / setToken`  | `setUser / setInitialized / logout`      |
+| 디렉토리      | flat (`src/pages/`, `src/features/components/`) | Feature-based (`src/features/{domain}/`) |
+| 비즈니스 상수 | 컴포넌트 내 하드코딩                            | `src/shared/utils/constants.js`          |

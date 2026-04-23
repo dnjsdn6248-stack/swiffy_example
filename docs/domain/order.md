@@ -1,22 +1,22 @@
 # Order Server API 명세서
 
-> **Base URL:** `http://localhost:8072/api/v1`
+> **Base URL:** `https://localhost:8072/api/v1`
 
 ---
 
 ## order_state 코드 정의
 
-| order_state | 설명 | 비고 |
-| :--- | :--- | :--- |
-| `ORDER_CHECKED_OUT` | 주문체크아웃 | 주문 프로세스 시작 |
-| `INVENTORY_RESERVED` | 재고예약완료 | 결제 전 단계 |
-| `INVENTORY_RESERVATION_FAILED` | 재고예약실패 | 재고 부족 등 |
-| `PAYMENT_COMPLETED` | 결제완료 | 결제 승인 완료 |
-| `PAYMENT_FAILED` | 결제실패 | 결제 거절 등 |
-| `INVENTORY_DEDUCTION_FAILED` | 재고차감실패 | 최종 재고 처리 오류 |
-| `INVENTORY_RELEASED` | 재고예약해제완료 | 주문 취소/실패로 인한 재고 복구 |
-| `INVENTORY_RELEASE_FAILED` | 재고예약해제실패 | 재고 복구 프로세스 오류 |
-| `ORDER_COMPLETED` | 주문완료 | 모든 주문 과정 정상 종료 |
+| order_state                    | 설명             | 비고                            |
+| :----------------------------- | :--------------- | :------------------------------ |
+| `ORDER_CHECKED_OUT`            | 주문체크아웃     | 주문 프로세스 시작              |
+| `INVENTORY_RESERVED`           | 재고예약완료     | 결제 전 단계                    |
+| `INVENTORY_RESERVATION_FAILED` | 재고예약실패     | 재고 부족 등                    |
+| `PAYMENT_COMPLETED`            | 결제완료         | 결제 승인 완료                  |
+| `PAYMENT_FAILED`               | 결제실패         | 결제 거절 등                    |
+| `INVENTORY_DEDUCTION_FAILED`   | 재고차감실패     | 최종 재고 처리 오류             |
+| `INVENTORY_RELEASED`           | 재고예약해제완료 | 주문 취소/실패로 인한 재고 복구 |
+| `INVENTORY_RELEASE_FAILED`     | 재고예약해제실패 | 재고 복구 프로세스 오류         |
+| `ORDER_COMPLETED`              | 주문완료         | 모든 주문 과정 정상 종료        |
 
 ---
 
@@ -26,17 +26,17 @@
 
 ### Request Body
 
-| Name | Type | Required | Description |
-| :--- | :--- | :---: | :--- |
-| `user_id` | `Number` | ✅ | 사용자 ID |
-| `user_name` | `String` | ❌ | 주문자 이름 |
-| `receiver_name` | `String` | ❌ | 수령인 이름 |
-| `receiver_phone` | `String` | ❌ | 수령인 연락처 |
-| `receiver_addr` | `String` | ❌ | 배송지 주소 |
-| `items` | `Array` | ✅ | 주문 상품 목록 |
-| `items[].productId` | `Number` | ✅ | 상품 ID |
-| `items[].optionId` | `Number` | ✅ | 옵션 ID |
-| `items[].quantity` | `Number` | ✅ | 수량 |
+| Name                | Type     | Required | Description    |
+| :------------------ | :------- | :------: | :------------- |
+| `user_id`           | `Number` |    ✅    | 사용자 ID      |
+| `user_name`         | `String` |    ❌    | 주문자 이름    |
+| `receiver_name`     | `String` |    ❌    | 수령인 이름    |
+| `receiver_phone`    | `String` |    ❌    | 수령인 연락처  |
+| `receiver_addr`     | `String` |    ❌    | 배송지 주소    |
+| `items`             | `Array`  |    ✅    | 주문 상품 목록 |
+| `items[].productId` | `Number` |    ✅    | 상품 ID        |
+| `items[].optionId`  | `Number` |    ✅    | 옵션 ID        |
+| `items[].quantity`  | `Number` |    ✅    | 수량           |
 
 ```json
 {
@@ -72,12 +72,12 @@
 
 ### Query Parameters
 
-| Parameter | Type | Required | Default | Description |
-| :--- | :--- | :---: | :--- | :--- |
-| `start_date` | String (ISO Date) | No | - | 조회 시작일 (예: `2024-04-01`) |
-| `end_date` | String (ISO Date) | No | - | 조회 종료일 (예: `2024-04-22`) |
-| `status` | String (Enum) | No | - | 주문 상태 (`order_state` 코드 사용) |
-| `page` | Integer | No | `0` | 페이지 번호 (0부터 시작) |
+| Parameter    | Type              | Required | Default | Description                         |
+| :----------- | :---------------- | :------: | :------ | :---------------------------------- |
+| `start_date` | String (ISO Date) |    No    | -       | 조회 시작일 (예: `2024-04-01`)      |
+| `end_date`   | String (ISO Date) |    No    | -       | 조회 종료일 (예: `2024-04-22`)      |
+| `status`     | String (Enum)     |    No    | -       | 주문 상태 (`order_state` 코드 사용) |
+| `page`       | Integer           |    No    | `0`     | 페이지 번호 (0부터 시작)            |
 
 ### Success Response
 
@@ -124,9 +124,9 @@
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| :--- | :--- | :---: | :--- |
-| `order_id` | `Number` | ✅ | 주문 ID |
+| Name       | Type     | Required | Description |
+| :--------- | :------- | :------: | :---------- |
+| `order_id` | `Number` |    ✅    | 주문 ID     |
 
 ### Success Response
 
@@ -215,9 +215,9 @@
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| :--- | :--- | :---: | :--- |
-| `order_id` | `Number` | ✅ | 주문 ID |
+| Name       | Type     | Required | Description |
+| :--------- | :------- | :------: | :---------- |
+| `order_id` | `Number` |    ✅    | 주문 ID     |
 
 ### Success Response
 
@@ -242,9 +242,9 @@
 
 ### Path Parameters
 
-| Name | Type | Required | Description |
-| :--- | :--- | :---: | :--- |
-| `order_id` | `String` | ✅ | 주문 ID |
+| Name       | Type     | Required | Description |
+| :--------- | :------- | :------: | :---------- |
+| `order_id` | `String` |    ✅    | 주문 ID     |
 
 ### Success Response
 
