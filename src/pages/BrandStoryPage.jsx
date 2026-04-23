@@ -11,7 +11,7 @@ export default function BrandStoryPage() {
   const [firstImg, secondImg] = sortedCards
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-[#FCFBF9] min-h-screen">
       <main className="w-full">
 
         {/* 첫 번째 상세 이미지 */}
@@ -20,7 +20,7 @@ export default function BrandStoryPage() {
             <img
               src={firstImg.imageUrl}
               alt="브랜드 스토리 1"
-              className="w-full object-cover"
+              className="w-full h-auto block"
             />
           </section>
         )}
@@ -64,7 +64,7 @@ export default function BrandStoryPage() {
             <img
               src={secondImg.imageUrl}
               alt="브랜드 스토리 2"
-              className="w-full object-cover"
+              className="w-full h-auto block"
             />
           </section>
         )}
