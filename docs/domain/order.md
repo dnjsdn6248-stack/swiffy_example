@@ -35,7 +35,7 @@
 | `receiver_addr`     | `String` |    ❌    | 배송지 주소    |
 | `items`             | `Array`  |    ✅    | 주문 상품 목록 |
 | `items[].productId` | `Number` |    ✅    | 상품 ID        |
-| `items[].optionId`  | `Number` |    ✅    | 옵션 ID        |
+| `items[].optionId`  | `Number` |    ✅    | 옵션 ID — 옵션 없는 상품은 `0` |
 | `items[].quantity`  | `Number` |    ✅    | 수량           |
 
 ```json
@@ -47,10 +47,12 @@
   "receiver_addr": "서울특별시 강남구 테헤란로 123",
   "items": [
     { "productId": 10, "optionId": 101, "quantity": 2 },
-    { "productId": 11, "optionId": 201, "quantity": 1 }
+    { "productId": 11, "optionId": 0,   "quantity": 1 }
   ]
 }
 ```
+
+> `optionId: 0` 은 옵션이 없는 상품을 나타내는 sentinel 값이다. `null` 대신 `0`을 사용한다.
 
 ### Success Response
 

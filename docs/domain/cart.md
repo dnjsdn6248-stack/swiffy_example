@@ -59,6 +59,8 @@
 
 장바구니에 상품을 추가한다. ACTIVE Cart가 없으면 생성한다. 동일한 `productId + optionId` 상품이 이미 있으면 수량을 합산한다.
 
+> **optionId 규칙:** 옵션이 없는 상품은 `optionId: 0`으로 전송한다. 장바구니 아이템은 `productId + optionId` 조합으로 식별되므로 `0`은 "옵션 없음"을 의미하는 고정 sentinel 값이다.
+
 #### Path Parameters
 
 없음
@@ -66,10 +68,18 @@
 #### Request Body
 
 ```json
+// 옵션이 있는 상품
 {
   "productId": 1001,
   "optionId": 2001,
   "quantity": 2
+}
+
+// 옵션이 없는 상품
+{
+  "productId": 1002,
+  "optionId": 0,
+  "quantity": 1
 }
 ```
 
