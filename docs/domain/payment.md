@@ -310,7 +310,20 @@ data: {"orderId":200001,"paymentId":"pay_7b3e04d227af44d2b2a2b9f7b7f1c555","stat
 
 ---
 
-### 3. 프론트 연동 참고사항
+### 3. 환경변수 설정 주의사항
+
+| 변수 | 설명 | fallback |
+|---|---|---|
+| `VITE_TOSS_CLIENT_KEY` | Toss 결제 SDK 초기화 키 (`CheckoutPage.jsx`) | 없음 — 반드시 `.env`에 존재해야 함 |
+
+- `.env` 파일 마지막 줄에 개행문자가 없으면 dotenv 파서가 해당 줄을 읽지 못한다.
+- `VITE_TOSS_CLIENT_KEY`가 `.env` 마지막 줄에 위치하므로 특히 주의.
+- 확인 방법: `cat -A .env` 실행 시 모든 줄 끝에 `$` 가 있어야 정상.
+- 현재 값 `test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm` 은 Toss 공식 문서 샘플 키. 실제 서비스 테스트 시 Toss 개발자 콘솔에서 발급한 프로젝트 전용 키(`test_ck_...`)로 교체 필요.
+
+---
+
+### 4. 프론트 연동 참고사항
 
 * 외부 공개 경로는 모두 `gatewayserver` 기준 `/api/v1/payments/**` 입니다.
   * 내부 `paymentserver` 경로 `/payments/**`를 직접 호출하지 않습니다.

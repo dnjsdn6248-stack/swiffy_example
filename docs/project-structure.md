@@ -250,3 +250,4 @@ GET /users/me ─────────►  로그인 사용자 정보 반환
 | createOrder 응답 | 서버가 text/plain 반환 — orderId를 정규식으로 파싱. 응답 포맷 변경 시 결제 플로우 중단됨 |
 | cancelOrder | 서버 saga 비활성화로 현재 409 반환. 취소 UI 구현 시 서버 상태 확인 필요 |
 | constants.js 누락 | `RETURN_DEADLINE_DAYS`, `ORDER_PAGE_SIZE`, `ORDER_STATUS` 등 order.md에 명시된 상수가 실제 코드에 없음 |
+| .env 마지막 줄 개행 | `.env` 파일 마지막 줄에 개행문자가 없으면 dotenv 파서가 해당 줄을 읽지 못함. `VITE_TOSS_CLIENT_KEY`가 마지막 줄이면 미적용됨. `.env` 편집 후 반드시 마지막 줄 뒤에 개행 확인 (`cat -A .env`로 `$` 유무 확인) |
