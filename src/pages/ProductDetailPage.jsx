@@ -139,20 +139,10 @@ export default function ProductDetailPage() {
   const [relatedSelections, setRelatedSelections] = useState({})
   const [relatedOpen, setRelatedOpen] = useState(true)
 
-  const [purchaseType, setPurchaseType] = useState('regular')
-  const [deliveryCycle, setDeliveryCycle] = useState('')
-  const [totalQty, setTotalQty] = useState(1)
-  const [includeShipping, setIncludeShipping] = useState(true)
-  const [cycleError, setCycleError] = useState(false)
-
   useEffect(() => {
     setSelectedOption('')
     setOptionError(false)
     setQty(1)
-    setPurchaseType('regular')
-    setDeliveryCycle('')
-    setTotalQty(1)
-    setCycleError(false)
     setActiveTab('detail')
   }, [id])
 
@@ -161,36 +151,21 @@ export default function ProductDetailPage() {
     return <div className="text-center py-24 text-[#bbb] font-bold text-[16px]">상품을 찾을 수 없습니다.</div>
   }
 
-  const isSubscribable = product.isSubscribable ?? false
-  const isSoldOut      = product.stockStatus === 'OUT_OF_STOCK' || product.stockQuantity === 0
+  const isSoldOut = product.stockStatus === 'OUT_OF_STOCK' || product.stockQuantity === 0
   const productImages  = product.images?.length ? product.images : (product.img ? [product.img] : [])
 
   const optionExtra = selectedOption
     ? product.options?.find(o => o.label === selectedOption)?.extra ?? 0
     : 0
 
-  let totalPrice = 0
-  if (isSubscribable) {
-    const bundleOpts = product.bundleOptions ?? []
-    const bundle = bundleOpts.find(b => b.qty === totalQty) ?? bundleOpts[0] ?? { price: product.price, save: 0 }
-    const discount = purchaseType === 'regular' ? (product.subscriptionDiscount ?? 0) : 0
-    totalPrice = bundle.price + optionExtra - discount
-  } else {
-    totalPrice = (product.price + optionExtra) * qty
-  }
+  const totalPrice = (product.price + optionExtra) * qty
 
   const validate = () => {
-    let ok = true
     if (!selectedOption && product.options?.length > 0) {
-      if (isSubscribable) setOptionError(true)
-      else setAlertMsg('상품 옵션을 선택해주세요.')
-      ok = false
+      setAlertMsg('상품 옵션을 선택해주세요.')
+      return false
     }
-    if (isSubscribable && purchaseType === 'regular' && !deliveryCycle) {
-      setCycleError(true)
-      ok = false
-    }
-    return ok
+    return true
   }
 
   const handleCart = async () => {
@@ -261,44 +236,6 @@ export default function ProductDetailPage() {
               <p className="text-[13px] text-[#bbb] mt-1 font-bold">50,000원 이상 구매 시 무료배송 (기본 배송비 3,000원)</p>
             </div>
 
-            {isSubscribable && (
-              <div className="space-y-4 pt-2 border-t border-[#f0f0f0]">
-                <div className="flex items-center gap-6">
-                  <span className="text-[14px] font-bold text-[#aaa] w-16 shrink-0">구매방법</span>
-                  <div className="flex gap-6">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="radio" name="pType" checked={purchaseType === 'regular'} onChange={() => setPurchaseType('regular')} className="w-4 h-4 accent-[#3ea76e]" />
-                      <span className={`text-[14px] font-black ${purchaseType === 'regular' ? 'text-[#111]' : 'text-[#aaa]'}`}>정기배송</span>
-                      <span className="bg-[#f0faf4] text-[#3ea76e] text-[11px] px-2 py-0.5 rounded-full font-bold border border-[#3ea76e]/20">
-                        {(product.subscriptionDiscount ?? 0).toLocaleString()}원 할인
-                      </span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input type="radio" name="pType" checked={purchaseType === 'once'} onChange={() => { setPurchaseType('once'); setCycleError(false) }} className="w-4 h-4 accent-[#3ea76e]" />
-                      <span className={`text-[14px] font-black ${purchaseType === 'once' ? 'text-[#111]' : 'text-[#aaa]'}`}>1회구매</span>
-                    </label>
-                  </div>
-                </div>
-
-                {purchaseType === 'regular' && (
-                  <div className="bg-[#f9f9f9] p-5 rounded-2xl border border-[#eee]">
-                    <p className="text-[13px] font-bold text-[#555] mb-3">배송주기</p>
-                    <select
-                      value={deliveryCycle}
-                      onChange={e => { setDeliveryCycle(e.target.value); setCycleError(false) }}
-                      className={`w-full bg-white border rounded-2xl px-5 py-3 text-[14px] outline-none cursor-pointer font-bold transition-colors ${cycleError ? 'border-red-400 bg-red-50' : 'border-[#eee] focus:border-[#3ea76e]'}`}
-                    >
-                      <option value="">[필수] 배송주기를 선택해 주세요.</option>
-                      <option value="1w">1주</option>
-                      <option value="2w">2주</option>
-                      <option value="1m">1개월</option>
-                    </select>
-                    {cycleError && <p className="text-red-400 text-[13px] font-bold mt-2 ml-1">배송주기를 선택해주세요.</p>}
-                  </div>
-                )}
-              </div>
-            )}
-
             {product.options?.length > 0 && (
               <div className="space-y-2">
                 <p className="text-[14px] font-bold text-[#555]">옵션 선택</p>
@@ -318,7 +255,7 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {!isSubscribable && selectedOption && (
+            {selectedOption && (
               <div className="flex items-center gap-4">
                 <p className="text-[14px] font-bold text-[#555]">수량</p>
                 <div className="flex items-center rounded-full overflow-hidden border border-[#eee] bg-[#f8f8f8] px-2">
@@ -347,71 +284,13 @@ export default function ProductDetailPage() {
                 disabled={isSoldOut}
                 className={`flex-1 py-4 font-black text-[15px] rounded-2xl transition-all border-none ${isSoldOut ? 'bg-[#ddd] text-[#bbb] cursor-not-allowed' : 'bg-[#3ea76e] text-white hover:bg-[#318a57] cursor-pointer'}`}
               >
-                {isSoldOut ? '품절' : isSubscribable
-                  ? (purchaseType === 'regular' ? '정기배송 신청하기' : '지금 바로 구매하기')
-                  : '구매하기'}
+                {isSoldOut ? '품절' : '구매하기'}
               </button>
             </div>
           </div>
         </div>
 
-        {isSubscribable && (
-          <div className="mb-10 bg-white rounded-[40px] p-10 border border-[#eee] shadow-[0_10px_40px_rgba(0,0,0,0.03)]">
-            <div className="flex justify-between items-center mb-8 pb-6 border-b border-[#f5f5f5]">
-              <h2 className="text-[20px] font-black tracking-tight">총 수량 선택</h2>
-              <div className="flex items-center gap-3">
-                <span className="text-[13px] font-bold text-[#aaa]">배송비 포함</span>
-                <button
-                  onClick={() => setIncludeShipping(v => !v)}
-                  className={`w-10 h-5 rounded-full transition-colors relative border-none cursor-pointer ${includeShipping ? 'bg-[#3ea76e]' : 'bg-[#ddd]'}`}
-                >
-                  <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${includeShipping ? 'left-6' : 'left-1'}`} />
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              {(product.bundleOptions ?? []).map(opt => (
-                <label
-                  key={opt.qty}
-                  className={`relative flex flex-col items-center p-6 rounded-2xl border-2 transition-all cursor-pointer ${totalQty === opt.qty ? 'border-[#3ea76e] bg-[#f0faf4]/50' : 'border-[#eee] hover:border-[#ddd] bg-white'}`}
-                >
-                  <input type="radio" name="bundle" checked={totalQty === opt.qty} onChange={() => setTotalQty(opt.qty)} className="absolute top-4 right-4 w-4 h-4 accent-[#3ea76e]" />
-                  <span className={`text-[20px] font-black mb-2 ${totalQty === opt.qty ? 'text-[#3ea76e]' : 'text-[#111]'}`}>{opt.qty}개</span>
-                  <p className="text-[15px] font-black text-[#111] mb-1">{opt.price.toLocaleString()}원</p>
-                  {opt.save > 0 && <span className="text-[11px] text-[#3ea76e] font-bold bg-[#f0faf4] px-2 py-0.5 rounded-full">{opt.save.toLocaleString()}원 절약</span>}
-                </label>
-              ))}
-            </div>
-
-            <div className="mt-10 pt-8 border-t border-[#f5f5f5] flex flex-col md:flex-row items-center justify-between gap-6">
-              <div>
-                <span className="text-[13px] font-bold text-[#aaa] block mb-1">최종 결제 금액</span>
-                <p className="text-[36px] font-black text-[#3ea76e] tracking-tight">
-                  {totalPrice.toLocaleString()}<span className="text-[20px] ml-1">원</span>
-                </p>
-              </div>
-              <div className="flex gap-3 w-full md:w-auto">
-                <button
-                  onClick={isSoldOut ? undefined : handleCart}
-                  disabled={isSoldOut}
-                  className={`flex-1 md:w-[180px] py-5 border-2 font-black text-[15px] rounded-2xl transition-all ${isSoldOut ? 'border-[#ddd] text-[#bbb] cursor-not-allowed bg-transparent' : 'border-[#3ea76e] text-[#3ea76e] hover:bg-[#f0faf4] cursor-pointer bg-transparent'}`}
-                >
-                  {isSoldOut ? '품절' : '장바구니'}
-                </button>
-                <button
-                  onClick={isSoldOut ? undefined : handleBuy}
-                  disabled={isSoldOut}
-                  className={`flex-1 md:w-[260px] py-5 font-black text-[16px] rounded-2xl transition-all border-none ${isSoldOut ? 'bg-[#ddd] text-[#bbb] cursor-not-allowed' : 'bg-[#3ea76e] text-white hover:bg-[#318a57] cursor-pointer'}`}
-                >
-                  {isSoldOut ? '품절' : (purchaseType === 'regular' ? '정기배송 신청하기' : '지금 바로 구매하기')}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {!isSubscribable && product.relatedProducts?.length > 0 && (
+        {product.relatedProducts?.length > 0 && (
           <div className="mb-10 bg-[#FCFBF9] rounded-[40px] border border-[#eee] overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.03)]">
             <button onClick={() => setRelatedOpen(v => !v)} className="w-full flex items-center justify-between px-10 py-6 bg-transparent border-none cursor-pointer hover:bg-black/5 transition-colors">
               <span className="text-[16px] font-black text-[#111] tracking-tight">함께 구매하면 좋은 제품</span>

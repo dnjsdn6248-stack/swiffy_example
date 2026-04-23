@@ -52,9 +52,6 @@ export const productApi = apiSlice.injectEndpoints({
             stockQuantity: opt.stockQuantity ?? 0,
             stockStatus:   opt.stockStatus   ?? 'IN_STOCK',
           })),
-          isSubscribable:       p.isSubscribable       ?? false,
-          subscriptionDiscount: p.subscriptionDiscount ?? 0,
-          bundleOptions:        p.bundleOptions        ?? [],
           relatedProducts: (p.relatedProducts ?? []).map((rp) => ({
             id:           rp.productId    ?? rp.id,
             name:         rp.productName  ?? rp.title ?? rp.name,

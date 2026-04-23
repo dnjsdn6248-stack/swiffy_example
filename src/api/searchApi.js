@@ -46,24 +46,7 @@ export const searchApi = apiSlice.injectEndpoints({
       providesTags: [{ type: 'Search', id: 'PRODUCTS' }],
     }),
 
-    // ── 2. 정기배송 상품 ─────────────────────────────────────────────────────
-    /**
-     * GET /search/products/subscription
-     * @param {{ page? }} params
-     */
-    getSubscriptionProducts: builder.query({
-      query: (params = {}) => ({ url: '/search/products/subscription', params }),
-      transformResponse: (res) => normalizePage(res, (item) => ({
-        id:         item.id,
-        name:       item.productTitle,
-        img:        item.imageUrl,
-        price:      item.price,
-        productUrl: item.productUrl ?? `/product/detail/${item.id}`,
-      })),
-      providesTags: [{ type: 'Search', id: 'SUBSCRIPTION' }],
-    }),
-
-    // ── 3. 베스트셀러 (랭킹) ─────────────────────────────────────────────────
+    // ── 2. 베스트셀러 (랭킹) ─────────────────────────────────────────────────
     /**
      * GET /search/products/bestseller
      * 현재 구현: 검색 랭킹 기반 (실판매량 집계 아님)
@@ -90,7 +73,7 @@ export const searchApi = apiSlice.injectEndpoints({
     getHomeBestseller: builder.query({
       query: (params = {}) => ({ url: '/search/products/home-bestseller', params }),
       transformResponse: (res) => (res.data ?? []).map((item) => ({
-        id:         item.productId ?? item.id,
+        id:         item.id,
         rank:       item.rank,
         name:       item.productTitle,
         img:        item.imageUrl,
@@ -98,7 +81,7 @@ export const searchApi = apiSlice.injectEndpoints({
         score:      item.score      ?? null,
         salesCount: item.salesCount ?? 0,
         createdAt:  item.createdAt  ?? null,
-        productUrl: `/product/detail/${item.productId ?? item.id}`,
+        productUrl: `/product/detail/${item.id}`,
       })),
       providesTags: [{ type: 'Search', id: 'HOME_BESTSELLER' }],
     }),
@@ -237,10 +220,9 @@ export const searchApi = apiSlice.injectEndpoints({
       query: () => ({ url: '/search/navigation' }),
       transformResponse: (res) => {
         const ROUTE_MAP = {
-          STORE:        '/product/list?categoryId=ALL',
-          SUBSCRIPTION: '/subscription',
-          BESTSELLER:   '/best',
-          BRAND:        '/brand-story',
+          STORE:      '/product/list?categoryId=ALL',
+          BESTSELLER: '/best',
+          BRAND:      '/brand-story',
         }
         return (res.data ?? []).map((item) => ({
           key:   item.key,
@@ -266,14 +248,10 @@ export const searchApi = apiSlice.injectEndpoints({
       ],
     }),
 
-    // ── 13. 브랜드 스토리 리소스 ──────────────────────────────────────────────
+    // ── 13. 브랜드 스토리 메인카드 ────────────────────────────────────────────
     /**
      * GET /search/brand-story
-     * 브랜드 스토리 카드/페이지 이미지·버튼 리소스 (Vault/Config 기반)
-     *
-     * 응답:
-     *   data.mainCard    → { imageUrl, buttonText, buttonUrl }
-     *   data.brandPage[] → [{ imageUrl, buttonText, buttonUrl, displayOrder, isActive }]
+     * 응답: { data: { mainCard: { imageUrl, buttonText, buttonUrl } } }
      */
     getBrandStory: builder.query({
       query: () => ({ url: '/search/brand-story' }),
@@ -281,7 +259,21 @@ export const searchApi = apiSlice.injectEndpoints({
       providesTags: [{ type: 'Search', id: 'BRAND_STORY' }],
     }),
 
-    // ── 14. 카테고리 목록 ─────────────────────────────────────────────────────
+    // ── 14. 브랜드 스토리 상세 카드 리스트 ────────────────────────────────────
+    /**
+     * GET /search/brand-story/detail
+     * 응답: { data: [{ imageUrl, displayOrder }] }
+     */
+    getBrandStoryDetail: builder.query({
+      query: () => ({ url: '/search/brand-story/detail' }),
+      transformResponse: (res) => (res.data ?? []).map((item) => ({
+        imageUrl:     item.imageUrl,
+        displayOrder: item.displayOrder,
+      })),
+      providesTags: [{ type: 'Search', id: 'BRAND_STORY_DETAIL' }],
+    }),
+
+    // ── 15. 카테고리 목록 ─────────────────────────────────────────────────────
     /**
      * GET /search/categories
      * Vault 설정 기준 카테고리/서브카테고리 목록.
@@ -315,7 +307,6 @@ export const searchApi = apiSlice.injectEndpoints({
 export const {
   useSearchProductsQuery,
   useLazySearchProductsQuery,
-  useGetSubscriptionProductsQuery,
   useGetBestsellerProductsQuery,
   useGetHomeBestsellerQuery,
   useGetTastePicksQuery,
@@ -329,5 +320,6 @@ export const {
   useGetNavigationQuery,
   useGetReviewHeaderQuery,
   useGetBrandStoryQuery,
+  useGetBrandStoryDetailQuery,
   useGetSearchCategoriesQuery,
 } = searchApi

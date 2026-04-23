@@ -18,7 +18,6 @@ export default function UserProfilePage() {
     { title: '쿠폰', count: profile?.couponCount, to: '/coupon' },
     { title: '게시물관리', to: '/profile/posts' },
     { title: '배송 주소록 관리', to: '/address' },
-    { title: '정기배송 관리', to: '/subscription' },
   ]
 
   if (isLoading) return <Spinner fullscreen />

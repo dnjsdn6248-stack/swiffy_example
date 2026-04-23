@@ -11,10 +11,9 @@ import Toast from '../ui/Toast'
 
 // API 응답 실패 시 폴백 (emoji 없이 표시)
 const FALLBACK_NAV = [
-  { key: 'STORE',        label: 'STORE',      emoji: '', route: '/product/list?categoryId=ALL' },
-  { key: 'SUBSCRIPTION', label: '정기배송',   emoji: '', route: '/subscription' },
-  { key: 'BESTSELLER',   label: '베스트셀러', emoji: '', route: '/best' },
-  { key: 'BRAND',        label: '브랜드 스토리', emoji: '', route: '/brand-story' },
+  { key: 'STORE',      label: 'STORE',        emoji: '', route: '/product/list?categoryId=ALL' },
+  { key: 'BESTSELLER', label: '베스트셀러',   emoji: '', route: '/best' },
+  { key: 'BRAND',      label: '브랜드 스토리', emoji: '', route: '/brand-story' },
 ]
 
 export default function Header() {
