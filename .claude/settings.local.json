@@ -21,7 +21,8 @@
       "Bash(ls -la c:/development/workspace/codes/eum_frontend/.env*)",
       "Bash(ls *)",
       "Bash(grep:*)",
-      "Bash(claude mcp *)"
+      "Bash(claude mcp *)",
+      "Bash(gh pr *)"
     ]
   }
 }

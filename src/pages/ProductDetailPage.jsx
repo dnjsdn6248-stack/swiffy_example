@@ -151,7 +151,7 @@ export default function ProductDetailPage() {
     return <div className="text-center py-24 text-[#bbb] font-bold text-[16px]">상품을 찾을 수 없습니다.</div>
   }
 
-  const isSoldOut = product.stockStatus === 'OUT_OF_STOCK' || product.stockQuantity === 0
+  const isSoldOut = product.stockStatus === 'SOLDOUT' || product.stockQuantity <= 0
   const productImages  = product.images?.length ? product.images : (product.img ? [product.img] : [])
 
   const optionExtra = selectedOption

@@ -315,6 +315,7 @@ data: {"orderId":200001,"paymentId":"pay_7b3e04d227af44d2b2a2b9f7b7f1c555","stat
 | 변수 | 설명 | fallback |
 |---|---|---|
 | `VITE_TOSS_CLIENT_KEY` | Toss 결제 SDK 초기화 키 (`CheckoutPage.jsx`) | 없음 — 반드시 `.env`에 존재해야 함 |
+| `VITE_BASE_URL` | 결제 성공/실패 콜백 URL 도메인 (`successUrl`, `failUrl`) | `window.location.origin` |
 
 - `.env` 파일 마지막 줄에 개행문자가 없으면 dotenv 파서가 해당 줄을 읽지 못한다.
 - `VITE_TOSS_CLIENT_KEY`가 `.env` 마지막 줄에 위치하므로 특히 주의.

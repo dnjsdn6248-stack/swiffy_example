@@ -22,7 +22,7 @@ export const productApi = apiSlice.injectEndpoints({
           tags:          p.tags   ?? null,
           salesCount:    p.salesCount    ?? 0,
           stockQuantity: p.stockQuantity ?? 0,
-          stockStatus:   p.stockStatus   ?? 'IN_STOCK',
+          stockStatus:   p.stockStatus   ?? 'AVAILABLE',
           img:           imageUrls[0] ?? null,
           images:        imageUrls,
           // detailImagelUrls — 상세 이미지 URL 배열
@@ -50,7 +50,7 @@ export const productApi = apiSlice.injectEndpoints({
             label:         opt.optionName  ?? opt.label,
             extra:         opt.extraPrice  ?? opt.additionalPrice ?? opt.extra ?? 0,
             stockQuantity: opt.stockQuantity ?? 0,
-            stockStatus:   opt.stockStatus   ?? 'IN_STOCK',
+            stockStatus:   opt.stockStatus   ?? 'AVAILABLE',
           })),
           relatedProducts: (p.relatedProducts ?? []).map((rp) => ({
             id:           rp.productId    ?? rp.id,
@@ -63,6 +63,36 @@ export const productApi = apiSlice.injectEndpoints({
         }
       },
       providesTags: (result, error, id) => [{ type: 'Product', id }],
+    }),
+
+    /** 상품 옵션 목록 — Product Server: GET /api/v1/product/{productId}/options */
+    getProductOptions: builder.query({
+      query: (id) => ({ url: `/product/${id}/options` }),
+      transformResponse: (res) => (res ?? []).map((opt) => ({
+        id:            opt.optionId,
+        label:         opt.optionName,
+        extra:         opt.extraPrice  ?? 0,
+        stockQuantity: opt.stockQuantity ?? 0,
+        stockStatus:   opt.stockStatus   ?? 'AVAILABLE',
+      })),
+      providesTags: (result, error, id) => [{ type: 'Product', id: `options-${id}` }],
+    }),
+
+    /** 카테고리 트리 — Product Server: GET /api/v1/product/categories */
+    getProductCategories: builder.query({
+      query: () => ({ url: '/product/categories' }),
+      transformResponse: (res) => (res ?? []).map((cat) => ({
+        id:           cat.categoryId,
+        name:         cat.name,
+        displayOrder: cat.displayOrder ?? 0,
+        children: (cat.children ?? []).map((child) => ({
+          id:           child.categoryId,
+          name:         child.name,
+          displayOrder: child.displayOrder ?? 0,
+          children:     child.children ?? [],
+        })),
+      })),
+      providesTags: [{ type: 'Category', id: 'PRODUCT_TREE' }],
     }),
 
     /** 상품 요약 — Product Server: GET /api/v1/product/frontend/{productId} */
@@ -86,5 +116,7 @@ export const productApi = apiSlice.injectEndpoints({
 
 export const {
   useGetProductByIdQuery,
+  useGetProductOptionsQuery,
+  useGetProductCategoriesQuery,
   useGetProductSummaryQuery,
 } = productApi

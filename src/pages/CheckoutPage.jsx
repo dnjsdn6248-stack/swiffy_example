@@ -216,8 +216,8 @@ export default function CheckoutPage() {
       await widgets.requestPayment({
         orderId: String(orderId),
         orderName,
-        successUrl: `${window.location.origin}/payment/success`,
-        failUrl: `${window.location.origin}/payment/fail`,
+        successUrl: `${import.meta.env.VITE_BASE_URL ?? window.location.origin}/payment/success`,
+        failUrl: `${import.meta.env.VITE_BASE_URL ?? window.location.origin}/payment/fail`,
         customerEmail: user.email ?? '',
         customerName: user.name ?? '',
         customerMobilePhone: (user.phoneNumber ?? '').replace(/-/g, ''),

@@ -54,11 +54,11 @@ category
 ```js
 {
   id:          p.productId ?? p.id,
-  name:        p.title ?? p.name,
-  img:         p.imageUrl ?? p.thumbnailUrl ?? p.img,
+  name:        p.productName ?? p.title ?? p.name,
+  brand:       p.brandName  ?? p.brand,
+  desc:        p.content ?? p.description ?? p.desc,
   price:       p.price,
   category:    p.categoryName ?? p.category,
-  description: p.description ?? p.desc,
 }
 ```
 
@@ -73,9 +73,13 @@ category
 | 훅 | 메서드 | 경로 | 설명 |
 |---|---|---|---|
 | `useGetProductByIdQuery(id)` | GET | `/product/:id` | 상품 상세 — Product Server |
+| `useGetProductOptionsQuery(id)` | GET | `/product/:id/options` | 상품 옵션 목록 — Product Server |
+| `useGetProductCategoriesQuery()` | GET | `/product/categories` | 카테고리 트리 (숫자 ID) — Product Server |
 | `useGetProductSummaryQuery(id)` | GET | `/product/frontend/:id` | 상품 요약 (이미지·이름·옵션) — 장바구니·주문 경량 조회용 |
 
 > 상품 목록·검색·베스트셀러·신상품 등은 **Search Server** (`searchApi.js`)에서 조회.
+
+> **카테고리 서버 구분**: `useGetProductCategoriesQuery` (Product Server, 숫자 ID) vs `useGetCategoriesQuery` (Search Server, 문자열 코드 `"SNACK_JERKY"` 등). 검색 필터에는 Search Server 카테고리 코드를 사용한다.
 
 ### 랜딩페이지 전용 Queries
 
@@ -118,6 +122,22 @@ category
 
 > **Base URL:** `https://localhost:8072/api/v1/product`
 
+### 공통 에러 응답
+
+```json
+{
+  "message": "에러 메시지",
+  "status": 401
+}
+```
+
+| HTTP Status | 설명 |
+|---|---|
+| `400` | 요청 파라미터 누락 또는 검증 실패 |
+| `401` | 비즈니스 로직 에러 |
+| `500` | 서버 내부 오류 |
+
+> 현재 `productserver`의 예외 응답 body `status` 값은 대부분 `401`로 내려옵니다.
 
 ---
 
@@ -130,36 +150,39 @@ category
 **성공 응답 (200 OK)**
 
 ```json
-{  
-    "productId": 1,
-    "productName": "어글어글 스테이크",
-    "categoryId": 1,
-    "categoryName": "Meal",
-    "brandName": "스위피테린",
-    "brandId": 10,
-    "content": "",
-    "detailImagelUrl": [
-      "https://bucket.s3.ap-northeast-2.amazonaws.com/..."
-    ],
-    "price": 15000,
-    "status": "판매중",
-    "tags": "[판매1위]",
-    "keywords": "",
-    "salesCount": 5200,
-    "stockQuantity": 50,
-    "stockStatus": "IN_STOCK",
-    "imageUrls": [
-      "https://bucket.s3.ap-northeast-2.amazonaws.com/..."
-    ],
-    "options": [
-      {
-        "optionId": 1,
-        "optionName": "1인분",
-        "extraPrice": 0,
-        "stockQuantity": 30,
-        "stockStatus": "IN_STOCK"
-      }
-    ]  
+{
+  "productId": 185,
+  "productName": "어글어글 스팀 100g 8종",
+  "categoryId": 163,
+  "categoryName": "오독오독",
+  "brandName": "어글어글",
+  "brandId": 3,
+  "content": "기호성 높은 강아지 간식",
+  "detailImageUrls": [
+    "https://cdn.example.com/product/detail-1.jpg"
+  ],
+  "price": 12900,
+  "priceDisplay": "12,900원",
+  "status": "판매중",
+  "tags": ["NEW"],
+  "keywords": "강아지간식,스팀",
+  "salesCount": 5200,
+  "deliveryFee": 3000,
+  "deliveryMethod": "택배",
+  "stockQuantity": 42,
+  "stockStatus": "AVAILABLE",
+  "imageUrls": [
+    "https://cdn.example.com/product/main.jpg"
+  ],
+  "options": [
+    {
+      "optionId": 10,
+      "optionName": "닭가슴살",
+      "extraPrice": 0,
+      "stockQuantity": 10,
+      "stockStatus": "AVAILABLE"
+    }
+  ]
 }
 ```
 
@@ -171,17 +194,195 @@ category
 | `productName` | `name` | |
 | `brandName` | `brand` | |
 | `content` | `desc` | 타이틀 아래 설명 |
-| `detailImagelUrl` | `detailImgs` | **배열** (중첩 배열 포함, `.flat()` 처리). 오타 포함 서버 원본 그대로 |
+| `detailImageUrls` | `detailImgs` | **배열** (중첩 배열 포함, `.flat()` 처리). 이전 오타 필드명 `detailImagelUrl`도 fallback으로 처리 |
 | `price` | `price` | |
 | `imageUrls` | `images` | 배열 |
 | `imageUrls[0]` | `img` | 대표 이미지 |
-| `stockStatus` | `stockStatus` | `IN_STOCK` / `OUT_OF_STOCK` |
+| `stockStatus` | `stockStatus` | `AVAILABLE` / `SOLDOUT` |
 | `stockQuantity` | `stockQuantity` | |
+| `tags` | `tags` | **배열** (이전 스펙: string) |
+| `deliveryFee` | — | 미사용 (프론트는 `constants.js`의 `SHIPPING_FEE` 사용) |
+| `deliveryMethod` | — | 미사용 |
+| `options[].optionId` | `options[].id` | |
 | `options[].optionName` | `options[].label` | |
 | `options[].extraPrice` | `options[].extra` | |
-| `options[].stockStatus` | `options[].stockStatus` | 옵션별 재고 상태 |
+| `options[].stockStatus` | `options[].stockStatus` | `AVAILABLE` / `SOLDOUT` |
 
-> `detailImagelUrl` 오타는 서버 원본 필드명. 수정 시 백엔드와 협의 필요.
+**에러 응답 (401)**
+
+```json
+{
+  "message": "해당 상품을 찾을 수 없습니다.",
+  "status": 401
+}
+```
+
+---
+
+### `GET /api/v1/product/{productId}/options` — 옵션 목록 조회
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---|---|:---:|---|
+| `productId` | Long | ✅ | 조회할 상품 ID |
+
+**성공 응답 (200 OK)**
+
+```json
+[
+  {
+    "optionId": 10,
+    "optionName": "닭가슴살",
+    "extraPrice": 0,
+    "stockQuantity": 10,
+    "stockStatus": "AVAILABLE"
+  },
+  {
+    "optionId": 11,
+    "optionName": "연어",
+    "extraPrice": 500,
+    "stockQuantity": 0,
+    "stockStatus": "SOLDOUT"
+  }
+]
+```
+
+> 옵션이 없는 상품은 빈 배열(`[]`)을 반환합니다.
+
+**에러 응답 (500)**
+
+```json
+{
+  "message": "서버 내부 오류가 발생했습니다.",
+  "status": 401
+}
+```
+
+---
+
+### `GET /api/v1/product/{productId}/options` — 옵션 목록 조회
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---|---|:---:|---|
+| `productId` | Long | ✅ | 조회할 상품 ID |
+
+**성공 응답 (200 OK)**
+
+```json
+[
+  {
+    "optionId": 10,
+    "optionName": "닭가슴살",
+    "extraPrice": 0,
+    "stockQuantity": 10,
+    "stockStatus": "AVAILABLE"
+  },
+  {
+    "optionId": 11,
+    "optionName": "연어",
+    "extraPrice": 500,
+    "stockQuantity": 0,
+    "stockStatus": "SOLDOUT"
+  }
+]
+```
+
+> 옵션이 없는 상품은 빈 배열(`[]`)을 반환합니다.
+
+| 서버 필드 | 프론트 필드 |
+|---|---|
+| `optionId` | `id` |
+| `optionName` | `label` |
+| `extraPrice` | `extra` |
+| `stockQuantity` | `stockQuantity` |
+| `stockStatus` | `stockStatus` |
+
+> 훅: `useGetProductOptionsQuery(id)` — `src/api/productApi.js`
+
+---
+
+### `GET /api/v1/product/categories` — 카테고리 트리 조회
+
+Product Server 기준 카테고리 트리. **숫자 ID** 사용.
+
+> Search Server의 `useGetCategoriesQuery`(문자열 코드 ID, 검색 필터용)와 별개.
+
+**성공 응답 (200 OK)**
+
+```json
+[
+  {
+    "categoryId": 100,
+    "name": "Snack & Jerky",
+    "displayOrder": 1,
+    "children": [
+      {
+        "categoryId": 163,
+        "name": "오독오독",
+        "displayOrder": 1,
+        "children": []
+      }
+    ]
+  }
+]
+```
+
+| 서버 필드 | 프론트 필드 |
+|---|---|
+| `categoryId` | `id` |
+| `name` | `name` |
+| `displayOrder` | `displayOrder` |
+| `children` | `children` |
+
+> 훅: `useGetProductCategoriesQuery()` — `src/api/productApi.js`
+
+---
+
+### `GET /api/v1/product/frontend/{productId}` — 상품 요약 조회
+
+장바구니·주문 등 경량 상품 정보가 필요한 컨텍스트에서 사용.
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---|---|:---:|---|
+| `productId` | Long | ✅ | 조회할 상품 ID |
+
+**성공 응답 (200 OK)**
+
+```json
+{
+  "imageUrl": "https://cdn.example.com/product/main.jpg",
+  "productId": 185,
+  "productName": "어글어글 동물복지 연어마들렌",
+  "price": 12900,
+  "options": [
+    { "optionId": 1, "optionName": "단품" },
+    { "optionId": 2, "optionName": "3개 세트" }
+  ]
+}
+```
+
+> 옵션이 없는 상품은 `options: []`를 반환합니다.
+
+#### 서버 → 프론트 필드 매핑
+
+| 서버 필드 | 프론트 필드 |
+|---|---|
+| `productId` | `id` |
+| `productName` | `name` |
+| `imageUrl` | `img` |
+| `price` | `price` |
+| `options[].optionId` | `options[].id` |
+| `options[].optionName` | `options[].label` |
+
+> 훅: `useGetProductSummaryQuery(id)` — `src/api/productApi.js`
+
+**에러 응답 (401)**
+
+```json
+{
+  "message": "해당 상품을 찾을 수 없습니다.",
+  "status": 401
+}
+```
 
 ---
 
@@ -192,10 +393,11 @@ category
   id, name, brand, desc, price,
   img,              // 대표 이미지 (imageUrls[0])
   images,           // 이미지 배열 (imageUrls)
-  stockStatus,      // 'IN_STOCK' | 'OUT_OF_STOCK'
+  stockStatus,      // 'AVAILABLE' | 'SOLDOUT'
   stockQuantity,    // 전체 재고 수량
-  options: [{ label, extra, stockStatus, stockQuantity }],
-  detailImgs,       // 상세 이미지 (detailImagelUrl)
+  tags,             // string[] (예: ["NEW"])
+  options: [{ id, label, extra, stockStatus, stockQuantity }],
+  detailImgs,       // 상세 이미지 배열 (detailImageUrls)
   relatedProducts: [{ id, name, originalPrice, discountPrice, img, options }],
 }
 ```
@@ -246,41 +448,3 @@ const { data } = useGetProductsQuery({ ...filters, page, size })
 ```
 
 `setFilters` 호출 시 `pagination.page`가 자동으로 1로 리셋된다.
-
----
-
-### `GET /api/v1/product/frontend/{productId}` — 상품 요약 조회
-
-장바구니·주문 등 경량 상품 정보가 필요한 컨텍스트에서 사용.
-
-| 파라미터 | 타입 | 필수 | 설명 |
-|---|---|:---:|---|
-| `productId` | Long | ✅ | 조회할 상품 ID |
-
-**성공 응답 (200 OK)**
-
-```json
-{
-  "imageUrl": "https://bucket.s3.ap-northeast-2.amazonaws.com/product/images/uuid.png",
-  "productId": 1,
-  "price": 13000,
-  "productName": "어글어글 동물복지 연어마들렌",
-  "options": [
-    { "optionId": 1, "optionName": "단품" },
-    { "optionId": 2, "optionName": "3개 세트" }
-  ]
-}
-```
-
-#### 서버 → 프론트 필드 매핑
-
-| 서버 필드 | 프론트 필드 |
-|---|---|
-| `productId` | `id` |
-| `productName` | `name` |
-| `imageUrl` | `img` |
-| `price` | `price` |
-| `options[].optionId` | `options[].id` |
-| `options[].optionName` | `options[].label` |
-
-> 훅: `useGetProductSummaryQuery(id)` — `src/api/productApi.js`

@@ -127,7 +127,10 @@ export const orderApi = apiSlice.injectEndpoints({
         method: 'DELETE',
         responseHandler: 'text',
       }),
-      invalidatesTags: (result, error, orderId) => [{ type: 'Order', id: orderId }],
+      invalidatesTags: (result, error, orderId) => [
+        { type: 'Order', id: orderId },
+        { type: 'Order', id: 'LIST' },
+      ],
     }),
 
   }),

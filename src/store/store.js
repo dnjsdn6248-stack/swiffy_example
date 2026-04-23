@@ -26,15 +26,21 @@ import '@/api/searchApi'
 import '@/api/paymentApi'
 
 /**
- * logout 액션 발생 시 getMe 캐시를 null로 초기화
+ * logout 액션 발생 시 전체 API 캐시 초기화
  * → useAuth()의 isLoggedIn이 false로 전환 → ProtectedRoute가 /login으로 리다이렉트
+ * resetApiState() 대신 getMe만 null 처리 후 invalidate → 로그인 전 공개 캐시 유지
  */
 const logoutMiddleware = (storeAPI) => (next) => (action) => {
   const result = next(action)
   if (action.type === logout.type) {
-    storeAPI.dispatch(
-      apiSlice.util.upsertQueryData('getMe', undefined, null)
-    )
+    storeAPI.dispatch(apiSlice.util.upsertQueryData('getMe', undefined, null))
+    storeAPI.dispatch(apiSlice.util.invalidateTags([
+      { type: 'Cart',     id: 'LIST' },
+      { type: 'Order',    id: 'LIST' },
+      { type: 'User',     id: 'PROFILE' },
+      { type: 'Address',  id: 'LIST' },
+      { type: 'Wishlist', id: 'LIST' },
+    ]))
   }
   return result
 }

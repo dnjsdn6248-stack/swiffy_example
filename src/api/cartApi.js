@@ -56,11 +56,13 @@ export const cartApi = apiSlice.injectEndpoints({
     // PUT /cart/frontend/item/select — 개별 선택 상태 (응답에 선택 상태 미포함)
     selectCartItem: builder.mutation({
       query: (body) => ({ url: '/cart/frontend/item/select', method: 'PUT', body }),
+      invalidatesTags: [{ type: 'Cart', id: 'LIST' }],
     }),
 
     // PUT /cart/frontend/item/select-all
     selectAllCartItems: builder.mutation({
       query: (body) => ({ url: '/cart/frontend/item/select-all', method: 'PUT', body }),
+      invalidatesTags: [{ type: 'Cart', id: 'LIST' }],
     }),
 
     // DELETE /cart/frontend/item/selected
