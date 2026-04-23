@@ -1,6 +1,6 @@
 # Wishlist 도메인
 
-기준일: 2026-04-17
+기준일: 2026-04-23
 
 ## 개요
 
@@ -34,6 +34,19 @@
 | `useRemoveWishlistItemMutation` | DELETE | `/wishlist/:productId` | 단일 삭제 |
 
 모든 Mutation은 `invalidatesTags: [{ type: 'Wishlist', id: 'LIST' }]`로 목록을 자동 재조회한다.
+
+---
+
+## WishListPage UI 동작
+
+| 위치 | 동작 |
+|---|---|
+| 상단 버튼 | "장바구니 보기" → `/cart` 이동 |
+| 개별 "담기" 버튼 | `addCartItem({ productId, quantity: 1 })` 호출 (cartApi) |
+| 담기 버튼 피드백 | 클릭 후 1.5초간 "담겼어요!" (초록) 표시 → 원래 텍스트 복원 |
+
+- `useAddCartItemMutation` import: `src/api/cartApi.js`
+- `WishItem` 컴포넌트: `onAddToCart` prop으로 핸들러 수신
 
 ---
 

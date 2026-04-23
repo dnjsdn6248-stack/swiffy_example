@@ -1,6 +1,6 @@
 # 프로젝트 구조
 
-기준일: 2026-04-22 (결제 플로우·Cart/Order API 명세 반영)
+기준일: 2026-04-23 (정기배송 전면 제거, WishListPage 장바구니 연결)
 
 ---
 
@@ -57,7 +57,7 @@ src/
 │       │   └── BrandStory.jsx    브랜드 스토리 섹션
 │       ├── layout/
 │       │   ├── Layout.jsx        Header + Outlet + Footer
-│       │   ├── Header.jsx        2계층 GNB: 상단(STORE·정기배송·베스트셀러·브랜드스토리 고정) + Store 서브네비(카테고리 API 동적, /product/list 한정)
+│       │   ├── Header.jsx        2계층 GNB: 상단(STORE·베스트셀러·브랜드스토리 고정) + Store 서브네비(카테고리 API 동적, /product/list 한정)
 │       │   ├── Footer.jsx
 │       │   └── SearchBar.jsx
 │       ├── review/
@@ -70,9 +70,8 @@ src/
 ├── pages/                        라우트 진입점 페이지 컴포넌트
 │   ├── LandingPage.jsx           /
 │   ├── StorePage.jsx             /product/list  (?categoryId= / ?sub= URL 파라미터로 카테고리·서브카테고리 구동)
-│   ├── ProductDetailPage.jsx     /product/detail/:id, /subscription/detail/:id
+│   ├── ProductDetailPage.jsx     /product/detail/:id
 │   ├── BestSellerPage.jsx        /best
-│   ├── SubscriptionPage.jsx      /subscription
 │   ├── CartPage.jsx              /cart (보호)
 │   ├── CheckoutPage.jsx          /checkout (보호)
 │   ├── PaymentSuccessPage.jsx    /payment/success (보호) — Toss 인증 성공 콜백, confirmPayment 호출
@@ -124,9 +123,7 @@ BrowserRouter
         ├── <Layout>               Header + Outlet + Footer
         │   ├── /                  LandingPage
         │   ├── /product/list      StorePage
-        │   ├── /subscription      SubscriptionPage
-        │   ├── /product/detail/:id       ProductDetailPage
-        │   ├── /subscription/detail/:id  ProductDetailPage (동일 컴포넌트)
+        │   ├── /product/detail/:id  ProductDetailPage
         │   ├── /best              BestSellerPage
         │   ├── /review            ReviewPage
         │   ├── /brand-story       BrandStoryPage
