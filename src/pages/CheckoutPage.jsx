@@ -191,7 +191,7 @@ export default function CheckoutPage() {
           .filter(Boolean).join(' '),
         items: checkedItems.map((i) => ({
           productId: i.productId,
-          optionId: i.optionId,
+          optionId: (productMap[i.productId]?.options?.length ?? 0) > 0 ? i.optionId : 0,
           quantity: i.quantity,
         })),
       }).unwrap()
