@@ -25,10 +25,10 @@ export const productApi = apiSlice.injectEndpoints({
           stockStatus:   p.stockStatus   ?? 'AVAILABLE',
           img:           imageUrls[0] ?? null,
           images:        imageUrls,
-          // detailImagelUrls — 상세 이미지 URL 배열
+          // detailImageUrls — 상세 이미지 URL 배열
           // 서버가 string / flat array / 중첩 array / JSON 문자열 중 어느 형태로 줘도 처리
           detailImgs: (() => {
-            const raw = p.detailImagelUrl ?? p.detailImageUrls  // 서버 오타 필드명 우선, 폴백 유지
+            const raw = p.detailImageUrls ?? p.detailImagelUrl  // 정식 필드 우선, 이전 오타명 fallback
             if (!raw) return p.detailImages ?? p.detailImgs ?? []
             if (typeof raw === 'string') {
               try {

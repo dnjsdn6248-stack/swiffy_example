@@ -1,10 +1,14 @@
 # Order Server API 명세서
 
-> **Base URL:** `https://localhost:8072/api/v1`
+> **Base URL:** `http://localhost:8072/api/v1`
 
 ---
 
 ## order_state 코드 정의
+
+Order Server API에서 제공하는 order_state 코드 정의입니다.
+
+### order_state 코드 상세
 
 | order_state                    | 설명             | 비고                            |
 | :----------------------------- | :--------------- | :------------------------------ |
@@ -26,17 +30,21 @@
 
 ### Request Body
 
-| Name                | Type     | Required | Description    |
-| :------------------ | :------- | :------: | :------------- |
-| `user_id`           | `Number` |    ✅    | 사용자 ID      |
-| `user_name`         | `String` |    ❌    | 주문자 이름    |
-| `receiver_name`     | `String` |    ❌    | 수령인 이름    |
-| `receiver_phone`    | `String` |    ❌    | 수령인 연락처  |
-| `receiver_addr`     | `String` |    ❌    | 배송지 주소    |
-| `items`             | `Array`  |    ✅    | 주문 상품 목록 |
-| `items[].productId` | `Number` |    ✅    | 상품 ID        |
-| `items[].optionId`  | `Number` |    ✅    | 옵션 ID — 옵션 없는 상품은 `0` |
-| `items[].quantity`  | `Number` |    ✅    | 수량           |
+✅ : 필수
+❌ : 옵션
+| Name | Type | Required | Description |
+| :--- | :--- | :---: | :--- |
+| `user_id` | `Number` | ✅ | 사용자 ID |
+| `user_name` | `String` | ❌ | 주문자 이름 |
+| `receiver_name` | `String` | ❌ | 수령인 이름 |
+| `receiver_phone` | `String` | ❌ | 수령인 연락처 |
+| `receiver_addr` | `String` | ❌ | 배송지 주소 |
+| `items` | `Array` | ✅ | 주문 상품 목록 |
+| `items[].productId` | `Number` | ✅ | 상품 ID |
+| `items[].optionId` | `Number` | ✅ | 옵션 ID |
+| `items[].quantity` | `Number` | ✅ | 수량 |
+
+### Request Body Example
 
 ```json
 {
@@ -46,21 +54,23 @@
   "receiver_phone": "010-1234-5678",
   "receiver_addr": "서울특별시 강남구 테헤란로 123",
   "items": [
-    { "productId": 10, "optionId": 101, "quantity": 2 },
-    { "productId": 11, "optionId": 0,   "quantity": 1 }
+    {
+      "productId": 10,
+      "optionId": 101,
+      "quantity": 2
+    },
+    {
+      "productId": 11,
+      "optionId": 201,
+      "quantity": 1
+    }
   ]
 }
 ```
 
-> `optionId: 0` 은 옵션이 없는 상품을 나타내는 sentinel 값이다. `null` 대신 `0`을 사용한다.
-
 ### Success Response
 
 - **Code:** `201 Created`
-
-```json
-{ "orderId": 1 }
-```
 
 ### Error Response
 
@@ -74,12 +84,18 @@
 
 ### Query Parameters
 
-| Parameter    | Type              | Required | Default | Description                         |
-| :----------- | :---------------- | :------: | :------ | :---------------------------------- |
-| `start_date` | String (ISO Date) |    No    | -       | 조회 시작일 (예: `2024-04-01`)      |
-| `end_date`   | String (ISO Date) |    No    | -       | 조회 종료일 (예: `2024-04-22`)      |
-| `status`     | String (Enum)     |    No    | -       | 주문 상태 (`order_state` 코드 사용) |
-| `page`       | Integer           |    No    | `0`     | 페이지 번호 (0부터 시작)            |
+| Parameter    | Type              | Required | Default | Description                                    |
+| :----------- | :---------------- | :------: | :------ | :--------------------------------------------- |
+| `start_date` | String (ISO Date) |    No    | -       | 조회 시작일 (예: `2024-04-01`)                 |
+| `end_date`   | String (ISO Date) |    No    | -       | 조회 종료일 (예: `2024-04-22`)                 |
+| `status`     | String (Enum)     |    No    | -       | 주문 상태 (`READY`, `SHIPPED`, `CANCELLED` 등) |
+| `page`       | Integer           |    No    | `0`     | 페이지 번호 (0부터 시작)                       |
+
+### Request Example
+
+```http
+GET /api/v1/orders?start_date=2026-04-01&end_date=2026-04-20&status=ORDER_COMPLETED&page=0
+```
 
 ### Success Response
 
@@ -102,7 +118,10 @@
       "failed_at": null
     }
   ],
-  "pageable": { "pageNumber": 0, "pageSize": 20 },
+  "pageable": {
+    "pageNumber": 0,
+    "pageSize": 20
+  },
   "totalElements": 1,
   "totalPages": 1,
   "last": true,
@@ -169,13 +188,24 @@
 ### Error Response
 
 - **Code:** `404 Not Found`
+
 - **Code:** `500 Internal Server Error`
 
 ---
 
 ## `GET /orders/me/history`
 
-로그인 사용자의 주문 상품 내역을 조회합니다. (주문 단위가 아니라 item 단위)
+로그인 사용자의 주문 상품 내역을 조회합니다.
+
+주문 단위가 아니라 주문 상세 item 단위로 이력을 반환합니다.
+
+#### Path Parameters
+
+없음
+
+#### Request Body
+
+없음
 
 ### Success Response
 
@@ -203,11 +233,17 @@
 
 ### No Content Response
 
-- **Code:** `204 No Content` (주문 내역 없음)
+- **Code:** `204 No Content`
+
+사용자의 주문 내역이 없는 경우입니다.
 
 ### Error Response
 
 - **Code:** `500 Internal Server Error`
+
+응답 body 없음.
+
+---
 
 ---
 
@@ -227,11 +263,12 @@
 
 ### Current Behavior
 
-- **Code:** `409 Conflict` (취소 saga 비활성화 중)
+- **Code:** `409 Conflict`
 
 ### Error Response
 
 - **Code:** `404 Not Found`
+
 - **Code:** `500 Internal Server Error`
 
 ---
@@ -240,7 +277,7 @@
 
 주문 취소/교환/반품 내역을 조회합니다.
 
-현재 `OrderService.getCsHistory()`는 빈 리스트를 반환하므로 `204 No Content`가 반환됩니다.
+현재 `OrderService.getCsHistory()`는 빈 리스트를 반환하므로, 주문이 존재하면 `204 No Content`가 반환됩니다.
 
 ### Path Parameters
 
@@ -272,9 +309,10 @@
 
 ### Current Behavior
 
-- **Code:** `204 No Content` (현재 구현상 반환 데이터 없음)
+- **Code:** `204 No Content`
 
 ### Error Response
 
 - **Code:** `404 Not Found`
+
 - **Code:** `500 Internal Server Error`
