@@ -27,7 +27,7 @@ const normalizeSearchProduct = (item) => ({
   discountTag:   item.discountTag    ?? null,
   isNew:         item.isNew          ?? false,
   productTag:    item.productTag     ?? null,
-  productUrl:    item.productUrl     ?? `/product/detail/${item.id}`,
+  productUrl:    `/product/detail/${item.id}`,
   category:      item.category       ?? null,
 })
 
@@ -61,7 +61,7 @@ export const searchApi = apiSlice.injectEndpoints({
         price:      item.price,
         salesRank:  item.salesRank  ?? null,
         rankTag:    item.rankTag    ?? null,
-        productUrl: item.productUrl ?? `/product/detail/${item.id}`,
+        productUrl: `/product/detail/${item.id}`,
       })),
       providesTags: [{ type: 'Search', id: 'BESTSELLER' }],
     }),

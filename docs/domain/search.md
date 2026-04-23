@@ -116,7 +116,7 @@ RTK Query 엔드포인트는 `src/api/searchApi.js`(`injectEndpoints`)에 정의
   discountTag:   item.discountTag,
   isNew:         item.isNew,
   productTag:    item.productTag,
-  productUrl:    item.productUrl,
+  productUrl:    `/product/detail/${item.id}`,  // 서버 productUrl(/products/30) 무시 — 클라이언트 라우터 기준으로 항상 직접 구성
   category:      item.category,
 }
 ```
@@ -153,6 +153,8 @@ RTK Query 엔드포인트는 `src/api/searchApi.js`(`injectEndpoints`)에 정의
 ### data[] 필드
 
 `id`, `imageUrl`, `productTitle`, `price`, `salesRank`, `rankTag`, `productUrl`
+
+> `productUrl` 서버값(`/products/{id}`) 무시 — 항상 `/product/detail/${id}`로 직접 구성.
 
 ---
 
