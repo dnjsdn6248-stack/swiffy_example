@@ -1,10 +1,31 @@
 import { Link } from 'react-router-dom'
+import { useGetBrandStoryDetailQuery } from '@/api/searchApi'
+import Spinner from '@/shared/components/Spinner'
 
 export default function BrandStoryPage() {
+  const { data: detailCards = [], isLoading } = useGetBrandStoryDetailQuery()
+
+  if (isLoading) return <Spinner fullscreen />
+
+  const sortedCards = [...detailCards].sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))
+  const [firstImg, secondImg] = sortedCards
+
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-[#FCFBF9] min-h-screen">
       <main className="w-full">
 
+        {/* 첫 번째 상세 이미지 */}
+        {firstImg && (
+          <section className="w-full">
+            <img
+              src={firstImg.imageUrl}
+              alt="브랜드 스토리 1"
+              className="w-full h-auto block"
+            />
+          </section>
+        )}
+
+        {/* 텍스트 섹션 1 */}
         <section className="border-b border-[#f4f4f4]">
           <div className="px-6 py-12 md:px-10 md:py-16 max-w-7xl mx-auto">
             <div className="mb-10 relative">
@@ -37,8 +58,19 @@ export default function BrandStoryPage() {
           </div>
         </section>
 
-        <section>
+        {/* 두 번째 상세 이미지 */}
+        {secondImg && (
+          <section className="w-full">
+            <img
+              src={secondImg.imageUrl}
+              alt="브랜드 스토리 2"
+              className="w-full h-auto block"
+            />
+          </section>
+        )}
 
+        {/* 텍스트 섹션 2 */}
+        <section>
           <div className="px-6 py-12 md:px-10 md:py-16 max-w-7xl mx-auto">
             <div className="mb-10 relative">
               <span className="text-6xl absolute -top-10 -left-1 font-serif text-[#3ea76e] opacity-30">"</span>
@@ -78,9 +110,8 @@ export default function BrandStoryPage() {
             </div>
           </div>
         </section>
-      </main>
 
-    
+      </main>
     </div>
   )
 }

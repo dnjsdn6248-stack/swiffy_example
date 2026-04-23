@@ -88,6 +88,8 @@ src/
 │   ├── ReviewPage.jsx            /review
 │   ├── BrandStoryPage.jsx        /brand-story
 │   ├── CSPage.jsx                /cs
+│   ├── NoticePage.jsx            /notice
+│   ├── NoticeDetailPage.jsx      /notice/:id
 │   ├── TermsPage.jsx             /terms
 │   └── PrivacyPage.jsx           /privacy
 │
@@ -128,6 +130,8 @@ BrowserRouter
         │   ├── /review            ReviewPage
         │   ├── /brand-story       BrandStoryPage
         │   ├── /cs                CSPage
+        │   ├── /notice            NoticePage
+        │   ├── /notice/:id        NoticeDetailPage
         │   ├── /terms             TermsPage
         │   ├── /privacy           PrivacyPage
         │   │
@@ -216,6 +220,7 @@ store = {
 | `reviewApi.js` | 리뷰 CRUD·도움돼요·홈 하이라이트 | review-server | `Review` |
 | `userApi.js` | 프로필·비밀번호·배송지 CRUD | user-server | `User`, `Address` |
 | `wishlistApi.js` | 위시리스트 CRUD | wishlist-server | `Wishlist` |
+| `noticeApi.js` | 공지사항 목록·상세 | notice-server | `Notice` |
 
 > `tagTypes` 전체 목록 (`src/api/apiSlice.js`):  
 > `['Auth', 'Product', 'Category', 'Cart', 'Order', 'Review', 'User', 'Address', 'Wishlist', 'Search', 'Payment']`

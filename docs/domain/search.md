@@ -116,7 +116,7 @@ RTK Query 엔드포인트는 `src/api/searchApi.js`(`injectEndpoints`)에 정의
   discountTag:   item.discountTag,
   isNew:         item.isNew,
   productTag:    item.productTag,
-  productUrl:    item.productUrl,
+  productUrl:    `/product/detail/${item.id}`,  // 서버 productUrl(/products/30) 무시 — 클라이언트 라우터 기준으로 항상 직접 구성
   category:      item.category,
 }
 ```
@@ -153,6 +153,8 @@ RTK Query 엔드포인트는 `src/api/searchApi.js`(`injectEndpoints`)에 정의
 ### data[] 필드
 
 `id`, `imageUrl`, `productTitle`, `price`, `salesRank`, `rankTag`, `productUrl`
+
+> `productUrl` 서버값(`/products/{id}`) 무시 — 항상 `/product/detail/${id}`로 직접 구성.
 
 ---
 
@@ -384,13 +386,33 @@ GNB 항목 메타데이터를 서버에서 동적으로 조회한다. `Header.js
 
 ### 응답 `data[]` 필드
 
-| 필드    | 설명                                                     |
-| ------- | -------------------------------------------------------- |
-| `key`   | 항목 식별자 (`STORE`, `BESTSELLER`, `BRAND`)             |
-| `label` | 표시 텍스트 (`STORE`, `베스트셀러`, `브랜드`)            |
-| `emoji` | 이모지 — 렌더링: `emoji + label`                         |
-| `route` | 서버 제공 경로 (클라이언트 라우터와 불일치 가능)         |
-| `api`   | 항목과 연결된 API 메타데이터 (`method`, `endpoint`, ...) |
+| 필드    | 설명                                             |
+| ------- | ------------------------------------------------ |
+| `key`   | 항목 식별자 (`STORE`, `BESTSELLER`, `BRAND`)     |
+| `label` | 표시 텍스트 (`STORE`, `베스트셀러`, `브랜드`)    |
+| `emoji` | 이모지 — 렌더링: `emoji + label`                 |
+| `route` | 서버 제공 경로 (클라이언트 라우터와 불일치 가능) |
+| `api`   | 항목과 연결된 API 메타데이터 (하단 구조 참조)    |
+
+#### `api` 필드 구조
+
+```json
+{
+  "method": "GET",
+  "endpoint": "/search/brand-story/detail",
+  "query": {},
+  "responsePath": "data"
+}
+```
+
+| 필드           | 설명                                      |
+| -------------- | ----------------------------------------- |
+| `method`       | HTTP 메서드                               |
+| `endpoint`     | API 경로                                  |
+| `query`        | 기본 쿼리 파라미터 (`{}` 이면 파라미터 없음) |
+| `responsePath` | 응답에서 데이터를 추출할 키 (`"data"`)    |
+
+> 프론트에서 직접 사용하지 않는 서버 메타데이터. `Header.jsx`는 `key`·`label`·`emoji`·`route`만 사용.
 
 > `SUBSCRIPTION` 키 제거됨 (2026-04-23) — 정기배송 기능 전면 삭제.
 

@@ -2,3 +2,4 @@ export const SHIPPING_FEE = 3000
 export const SHIPPING_FREE_THRESHOLD = 50000
 
 export const PRODUCT_PAGE_SIZE = 12
+export const NOTICE_PAGE_SIZE  = 10
