@@ -63,7 +63,7 @@ export default function CheckoutPage() {
   const { user } = useAuth()
 
   const checkedIds = useAppSelector(selectCheckedItemIds)
-  const { data: cartData, isLoading: cartLoading } = useGetCartQuery()
+  const { data: cartData, isLoading: cartLoading } = useGetCartQuery(0)
 
   const checkedItems = (cartData?.items ?? []).filter((i) => checkedIds.includes(itemKey(i)))
 
@@ -116,7 +116,7 @@ export default function CheckoutPage() {
     loadTossPayments(import.meta.env.VITE_TOSS_CLIENT_KEY)
       .then((tp) => {
         if (!mounted) return
-        const w = tp.widgets({ customerKey: user.userId })
+        const w = tp.widgets({ customerKey: String(user.userId) })
         setWidgets(w)
       })
       .catch(() => toast.error('결제위젯 초기화에 실패했습니다.'))
