@@ -15,7 +15,6 @@ import { useGetProductByIdQuery } from '@/api/productApi'
 import { useCreateOrderMutation } from '@/api/orderApi'
 import { usePreparePaymentMutation } from '@/api/paymentApi'
 
-import { SHIPPING_FEE, SHIPPING_FREE_THRESHOLD } from '@/shared/utils/constants'
 import useToast from '@/hooks/useToast'
 
 const itemKey = (item) => `${item.productId}-${item.optionId ?? 'none'}`
@@ -82,13 +81,7 @@ export default function CheckoutPage() {
     (sum, i) => sum + (priceMap[itemKey(i)] ?? 0),
     0,
   )
-  const shippingFee =
-    totalProductPrice > 0
-      ? totalProductPrice >= SHIPPING_FREE_THRESHOLD
-        ? 0
-        : SHIPPING_FEE
-      : 0
-  const finalAmount = totalProductPrice + shippingFee
+  const finalAmount = totalProductPrice
 
   // ── 배송지 폼 ───────────────────────────────────────────────────────────────
   const [isAddrOpen, setIsAddrOpen] = useState(true)
@@ -345,12 +338,6 @@ export default function CheckoutPage() {
             {checkedItems.map((item) => (
               <CheckoutItemRow key={itemKey(item)} item={item} onReady={handleReady} />
             ))}
-            <div className="mt-4 flex justify-between items-center">
-              <span className="text-[14px] font-bold text-[#bbb]">배송비</span>
-              <span className="text-[14px] font-black text-[#3ea76e]">
-                {shippingFee === 0 ? '0원 (무료배송)' : `${shippingFee.toLocaleString()}원`}
-              </span>
-            </div>
           </section>
 
           {/* 결제수단 — Toss 결제위젯 */}
@@ -380,12 +367,6 @@ export default function CheckoutPage() {
                 <div className="flex justify-between text-[14px] font-bold text-[#aaa]">
                   <span>총 상품금액</span>
                   <span className="text-[#111]">{totalProductPrice.toLocaleString()}원</span>
-                </div>
-                <div className="flex justify-between text-[14px] font-bold text-[#aaa]">
-                  <span>배송비</span>
-                  <span className="text-[#111]">
-                    {shippingFee === 0 ? '무료' : `+${shippingFee.toLocaleString()}원`}
-                  </span>
                 </div>
                 <div className="pt-5 border-t border-dashed border-[#eee] flex justify-between items-end">
                   <span className="font-black text-[15px] text-[#111]">최종 결제 금액</span>

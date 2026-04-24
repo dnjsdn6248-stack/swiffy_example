@@ -20,7 +20,6 @@ import {
 } from '../features/cart/cartSlice'
 import Pagination from '../shared/components/Pagination'
 import Spinner from '../shared/components/Spinner'
-import { SHIPPING_FEE, SHIPPING_FREE_THRESHOLD } from '../shared/utils/constants'
 
 const PAGE_SIZE = 3
 
@@ -175,10 +174,7 @@ export default function CartPage() {
   const totalProductPrice = items
     .filter((i) => checkedIds.includes(itemKey(i)))
     .reduce((sum, i) => sum + (priceMap[itemKey(i)] ?? 0), 0)
-  const shippingFee  = totalProductPrice > 0
-    ? (totalProductPrice >= SHIPPING_FREE_THRESHOLD ? 0 : SHIPPING_FEE)
-    : 0
-  const finalPayment = totalProductPrice + shippingFee
+  const finalPayment = totalProductPrice
 
   useEffect(() => {
     if (page > Math.max(totalPages, 1)) setPage(Math.max(totalPages, 1))
@@ -296,12 +292,6 @@ export default function CartPage() {
               <div className="flex justify-between text-[15px] font-bold">
                 <span className="text-[#aaa]">총 상품 금액</span>
                 <span className="text-[#111] font-black">{totalProductPrice.toLocaleString()}원</span>
-              </div>
-              <div className="flex justify-between text-[15px] font-bold">
-                <span className="text-[#aaa]">배송비</span>
-                <span className="text-[#111] font-black">
-                  {shippingFee === 0 ? '무료' : `${shippingFee.toLocaleString()}원`}
-                </span>
               </div>
             </div>
 

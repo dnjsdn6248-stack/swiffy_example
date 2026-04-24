@@ -187,7 +187,15 @@ export const searchApi = apiSlice.injectEndpoints({
      */
     searchNotices: builder.query({
       query: (params = {}) => ({ url: '/search/notices', params }),
-      transformResponse: (res) => normalizePage(res, (n) => n),
+      transformResponse: (res) => normalizePage(res, (n) => ({
+        id:              n.noticeId        ?? n.id   ?? null,
+        title:           n.title           ?? '',
+        createdAt:       n.createdAt       ?? n.created_at ?? null,
+        author:          n.author          ?? '',
+        viewCount:       n.viewCount       ?? 0,
+        noticeDetailUrl: n.noticeDetailUrl ?? null,
+        // isFixed: 고정공지 표시 방식 미확정 — 백엔드 확정 후 추가
+      })),
       providesTags: [{ type: 'Search', id: 'NOTICES' }],
     }),
 

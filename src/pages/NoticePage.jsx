@@ -1,39 +1,39 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
-import { useGetNoticesQuery } from '@/api/noticeApi'
+import { useSearchNoticesQuery } from '@/api/searchApi'
 import Pagination from '@/shared/components/Pagination'
 import Spinner from '@/shared/components/Spinner'
 import { NOTICE_PAGE_SIZE } from '@/shared/utils/constants'
 
-const PERIODS = [
-  { value: 'WEEK',        label: '일주일' },
-  { value: 'MONTH',       label: '한달'   },
-  { value: 'THREE_MONTH', label: '3개월'  },
-  { value: 'ALL',         label: '전체'   },
+// 백엔드 확정값 — search.md 기준
+const SEARCH_RANGES = [
+  { value: '일주일', label: '일주일' },
+  { value: '한달',   label: '한달'   },
+  { value: '세달',   label: '3개월'  },
+  { value: '전체',   label: '전체'   },
 ]
 
 const SEARCH_TYPES = [
-  { value: 'title',   label: '제목' },
-  { value: 'content', label: '내용' },
+  { value: '제목', label: '제목' },
+  { value: '내용', label: '내용' },
 ]
 
 export default function NoticePage() {
-  const [page, setPage]           = useState(1) // 1-based (Pagination 컴포넌트 기준)
-  const [keyword, setKeyword]     = useState('')
-  const [inputValue, setInput]    = useState('')
-  const [period, setPeriod]       = useState(PERIODS[0].value)       // 'WEEK'
-  const [searchType, setType]     = useState(SEARCH_TYPES[0].value)  // 'title'
+  const [page, setPage]         = useState(1) // 1-based (Pagination 컴포넌트 기준)
+  const [keyword, setKeyword]   = useState('')
+  const [inputValue, setInput]  = useState('')
+  const [searchRange, setRange] = useState(SEARCH_RANGES[0].value) // '일주일'
+  const [searchType, setType]   = useState(SEARCH_TYPES[0].value)  // '제목'
 
-  const { data, isLoading, isError } = useGetNoticesQuery({
-    page: page - 1, // 0-based API
-    size: NOTICE_PAGE_SIZE,
-    keyword,
-    period,
-    searchType,
+  const { data, isLoading, isError } = useSearchNoticesQuery({
+    page:        page - 1, // 0-based API
+    size:        NOTICE_PAGE_SIZE,
+    searchRange,
+    ...(keyword && { keyword, searchType }),
   })
 
-  // transformResponse 후 정규화된 필드 사용
+  // normalizePage 후 정규화된 필드 사용
   const notices    = data?.content    ?? []
   const totalPages = data?.totalPages ?? 1
 
@@ -74,21 +74,15 @@ export default function NoticePage() {
 
           {!isLoading && notices.map((notice, index) => (
             <Link
-              key={notice.id ?? `fixed-${index}`}
+              key={notice.id ?? `notice-${index}`}
               to={notice.id ? `/notice/${notice.id}` : '#'}
               className="flex items-center justify-between py-4 px-2 border-b border-[#f0f0f0] hover:bg-[#f9f9f9] transition-colors group"
             >
               <div className="flex items-center gap-5 text-[14px] flex-1 min-w-0">
-                <span className={`shrink-0 min-w-[40px] text-center text-[13px] font-bold ${
-                  notice.isFixed ? 'text-primary' : 'text-[#bbb]'
-                }`}>
-                  {notice.isFixed ? '공지' : notice.id}
+                <span className="shrink-0 min-w-[40px] text-center text-[13px] font-bold text-[#bbb]">
+                  {notice.id}
                 </span>
-                <span className={`truncate ${
-                  notice.isFixed
-                    ? 'text-[#111] font-bold'
-                    : 'text-[#444] font-medium group-hover:text-primary'
-                } transition-colors`}>
+                <span className="truncate text-[#444] font-medium group-hover:text-primary transition-colors">
                   {notice.title}
                 </span>
               </div>
@@ -112,12 +106,12 @@ export default function NoticePage() {
           {/* 드롭다운 2개: 기간 + 검색 기준 */}
           <div className="flex gap-2">
             <select
-              value={period}
-              onChange={(e) => { setPeriod(e.target.value); setPage(1) }}
+              value={searchRange}
+              onChange={(e) => { setRange(e.target.value); setPage(1) }}
               className="flex-1 px-3 py-2.5 border border-[#ddd] rounded-lg text-[14px] bg-white text-[#555] focus:outline-none focus:border-primary"
             >
-              {PERIODS.map((p) => (
-                <option key={p.value} value={p.value}>{p.label}</option>
+              {SEARCH_RANGES.map((r) => (
+                <option key={r.value} value={r.value}>{r.label}</option>
               ))}
             </select>
             <select

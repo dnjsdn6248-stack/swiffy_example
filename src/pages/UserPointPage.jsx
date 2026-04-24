@@ -3,10 +3,10 @@ import { Wallet, ChevronRight, History, Info } from "lucide-react";
 
 export default function UserPointPage() {
   const pointSummary = [
-    { label: "총 적립금", value: "3,080원", highlight: false },
-    { label: "사용가능 적립금", value: "3,080원", highlight: true },
-    { label: "사용된 적립금", value: "0원", highlight: false },
-    { label: "환불예정 적립금", value: "0원", highlight: false },
+    { label: "총 적립금", value: null, highlight: false },
+    { label: "사용가능 적립금", value: null, highlight: true },
+    { label: "사용된 적립금", value: null, highlight: false },
+    { label: "환불예정 적립금", value: null, highlight: false },
   ];
 
   const menuLinks = [
@@ -39,7 +39,7 @@ export default function UserPointPage() {
                   {item.label}
                 </span>
                 <span className={`text-[18px] font-black tracking-tight ${item.highlight ? 'text-[#3ea76e]' : 'text-[#111]'}`}>
-                  {item.value}
+                  {item.value ?? '-'}
                 </span>
               </div>
             ))}

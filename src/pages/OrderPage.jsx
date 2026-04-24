@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { DayPicker } from 'react-day-picker'
+import { ko } from 'react-day-picker/locale'
+import 'react-day-picker/style.css'
 import { useGetOrdersQuery } from '../api/orderApi'
 import Pagination from '../shared/components/Pagination'
 import Spinner from '../shared/components/Spinner'
@@ -30,14 +33,21 @@ export default function OrderPage() {
   const [activeMainTab, setActiveMainTab] = useState('주문내역')
   const [status, setStatus] = useState('전체 주문처리상태')
   const [period, setPeriod] = useState('3개월')
+  const [range, setRange] = useState({ from: undefined, to: undefined })
   const [page, setPage] = useState(1)
 
   const apiStatus = status === '전체 주문처리상태' ? undefined : STATUS_API_MAP[status]
-  const apiPeriod = PERIOD_API_MAP[period]
+  const isCustomPeriod = period === '기간설정'
+
+  const toYMD = (date) => date ? date.toISOString().slice(0, 10) : undefined
+
+  const dateParams = isCustomPeriod
+    ? { start_date: toYMD(range.from), end_date: toYMD(range.to) }
+    : { period: PERIOD_API_MAP[period] }
 
   const { data, isLoading } = useGetOrdersQuery({
     status: apiStatus,
-    period: apiPeriod,
+    ...dateParams,
     page,
     size: PAGE_SIZE,
   })
@@ -52,7 +62,18 @@ export default function OrderPage() {
     }
   }, [page, totalPages])
 
-  const handleFilterChange = (setter, val) => { setter(val); setPage(1) }
+  const handleFilterChange = (setter, val) => {
+    setter(val)
+    setPage(1)
+    if (setter === setPeriod && val !== '기간설정') {
+      setRange({ from: undefined, to: undefined })
+    }
+  }
+
+  const handleRangeChange = (newRange) => {
+    setRange(newRange ?? { from: undefined, to: undefined })
+    setPage(1)
+  }
 
   const handleWriteReview = (order, item) => {
     navigate('/review/write', {
@@ -124,10 +145,24 @@ export default function OrderPage() {
             </div>
           </div>
 
-          <div className="pt-8 border-t border-[#f5f5f5] flex items-center gap-3 text-[14px] text-[#aaa] font-bold">
-            <div className="w-5 h-5 rounded-full bg-[#f0faf4] text-[#3ea76e] flex items-center justify-center text-[12px] shrink-0 font-black">!</div>
-            <span>취소/교환/반품 신청은 배송완료일 기준 3일까지만 가능합니다.</span>
-          </div>
+          {isCustomPeriod && (
+            <div className="flex flex-col items-start gap-4 mb-10">
+              <div className="flex items-center gap-3 text-[14px] font-bold text-[#888]">
+                <span>{range.from ? range.from.toLocaleDateString('ko-KR') : '시작일'}</span>
+                <span>~</span>
+                <span>{range.to ? range.to.toLocaleDateString('ko-KR') : '종료일'}</span>
+              </div>
+              <DayPicker
+                locale={ko}
+                mode="range"
+                selected={range}
+                onSelect={handleRangeChange}
+                captionLayout="dropdown"
+                toDate={new Date()}
+              />
+            </div>
+          )}
+
         </div>
 
         {isLoading ? (
@@ -192,7 +227,7 @@ export default function OrderPage() {
 
                 <div className="px-10 md:px-14 py-8 bg-[#fcfcfc] border-t border-[#f5f5f5] flex flex-col md:flex-row items-center justify-between gap-4">
                   <p className="text-[13px] font-bold text-[#bbb] tracking-tight">
-                    상품금액 {order.productPrice?.toLocaleString()} + 배송비 {order.shippingPrice?.toLocaleString()} - 할인 {order.discountPrice?.toLocaleString()}
+                    상품금액 {order.productPrice?.toLocaleString()} - 할인 {order.discountPrice?.toLocaleString()}
                   </p>
                   <div className="flex items-center gap-5">
                     <span className="text-[15px] font-bold text-[#888]">최종 결제금액</span>

@@ -57,9 +57,6 @@ export default function OrderDetailPage() {
         <section className="bg-white rounded-[32px] p-10 md:p-12 border border-[#eee] shadow-[0_10px_40px_rgba(0,0,0,0.03)]">
           <h2 className="text-[20px] font-black mb-10 tracking-tight flex items-center justify-between">
             주문 상품 (총 {order.items.length}개)
-            {order.shippingPrice === 0 && (
-              <span className="text-[#aaa] text-[14px] font-bold tracking-tight">전체 무료배송</span>
-            )}
           </h2>
 
           <div className="divide-y divide-[#f5f5f5]">
@@ -72,16 +69,6 @@ export default function OrderDetailPage() {
             ))}
           </div>
 
-          {/* 배송비 계산 박스 */}
-          <div className="mt-10 p-8 bg-[#FCFBF9] rounded-[24px] border border-[#eee]">
-            <div className="flex flex-wrap items-center gap-4 text-[15px] font-bold text-[#555] tracking-tight">
-              <span>상품구매금액 <b className="text-[#111] font-black">{order.productPrice.toLocaleString()}원</b></span>
-              <span className="text-[#ccc]">+</span>
-              <span>배송비 <b className="text-[#111] font-black">{order.shippingPrice.toLocaleString()}원</b></span>
-              <span className="text-[#ccc]">=</span>
-              <span className="text-[18px] font-black text-[#111]">합계 : {order.total.toLocaleString()}원</span>
-            </div>
-          </div>
         </section>
 
         {/* 결제 정보 */}
@@ -128,12 +115,6 @@ export default function OrderDetailPage() {
                 </div>
               )}
 
-              <div className="flex justify-between items-center pt-2">
-                <span className="text-[#555] font-bold">배송비</span>
-                <span className="font-black text-[18px] tracking-tight">
-                  {order.shippingPrice === 0 ? '무료' : `${order.shippingPrice.toLocaleString()}원`}
-                </span>
-              </div>
             </div>
           </div>
         </section>

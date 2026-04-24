@@ -105,7 +105,6 @@ function TabContent({ activeTab, product, setActiveTab }) {
         <div className="flex flex-col gap-8 text-[14px] text-[#555] leading-relaxed py-4">
           <div>
             <h3 className="font-black text-[#111] mb-3 text-[16px]">배송 안내</h3>
-            <p className="font-bold text-[#888]">배송 방법: 택배 / 배송비: 3,000원 (50,000원 이상 무료)</p>
             <p className="font-bold text-[#888]">배송 기간: 1일 ~ 2일 (도서산간 지역 배송 불가)</p>
           </div>
           <div>
@@ -217,7 +216,7 @@ export default function ProductDetailPage() {
           <div className="flex-1 flex flex-col gap-5 py-2">
             <div>
               <div className="flex justify-between items-start mb-2">
-                <p className="text-[13px] text-[#3ea76e] font-bold">{product.brand ?? '어글어글'}</p>
+                {product.brand && <p className="text-[13px] text-[#3ea76e] font-bold">{product.brand}</p>}
                 <div className="flex gap-2">
                   <button className="p-2 hover:bg-[#f5f5f5] rounded-full cursor-pointer border-none bg-transparent transition-colors">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
@@ -233,7 +232,6 @@ export default function ProductDetailPage() {
 
             <div className="pt-5 border-t border-[#f0f0f0]">
               <p className="text-[30px] font-black text-[#111] tracking-tight">{product.price?.toLocaleString()}원</p>
-              <p className="text-[13px] text-[#bbb] mt-1 font-bold">50,000원 이상 구매 시 무료배송 (기본 배송비 3,000원)</p>
             </div>
 
             {product.options?.length > 0 && (
