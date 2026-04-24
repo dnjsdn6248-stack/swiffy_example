@@ -26,7 +26,7 @@ import Spinner from '../shared/components/Spinner'
 const itemKey = (item) => `${item.productId}-${item.optionId ?? 0}`
 
 // ─── CartItemRow ──────────────────────────────────────────────────────────────
-function CartItemRow({ item, checked, onToggle, onQtyChange, onOptionChange, onRemove, onOrder, onPriceReady }) {
+function CartItemRow({ item, checked, onToggle, onQtyChange, onOptionChange, onRemove, onPriceReady }) {
   const { data: product, isLoading } = useGetProductByIdQuery(item.productId)
 
   const selectedOption = product?.options?.find((o) => String(o.id) === String(item.optionId)) ?? null
@@ -141,14 +141,6 @@ function CartItemRow({ item, checked, onToggle, onQtyChange, onOptionChange, onR
         >
           삭제
         </button>
-        {!item.isSoldOut && (
-          <button
-            onClick={onOrder}
-            className="h-10 px-6 rounded-full bg-[#3ea76e] text-white font-bold text-[13px] border-none hover:bg-[#318a57] transition-all cursor-pointer"
-          >
-            주문하기
-          </button>
-        )}
       </div>
     </div>
   )
@@ -307,10 +299,6 @@ export default function CartPage() {
               onQtyChange={handleUpdateQty}
               onOptionChange={handleOptionChange}
               onRemove={() => handleRemoveOne(item)}
-              onOrder={() => {
-                dispatch(initCheckedItems([itemKey(item)]))
-                navigate('/checkout')
-              }}
               onPriceReady={handlePriceReady}
             />
           ))}
