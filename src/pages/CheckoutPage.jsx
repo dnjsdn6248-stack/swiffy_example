@@ -332,13 +332,12 @@ export default function CheckoutPage() {
             )}
           </section>
 
-          {/* 주문상품 */}
-          <section className="bg-white rounded-[32px] p-8 border border-[#eee]">
-            <h2 className="text-[18px] font-black text-center text-[#111] tracking-tight mb-4">주문상품</h2>
+          {/* 가격·상품명 수집용 — UI 미노출 */}
+          <div className="hidden">
             {checkedItems.map((item) => (
               <CheckoutItemRow key={itemKey(item)} item={item} onReady={handleReady} />
             ))}
-          </section>
+          </div>
 
           {/* 결제수단 — Toss 결제위젯 */}
           <section className="bg-white rounded-[32px] p-8 border border-[#eee]">
