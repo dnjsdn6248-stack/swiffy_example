@@ -5,7 +5,7 @@ export const cartApi = apiSlice.injectEndpoints({
 
     // GET /cart?page={page}  — 더보기 방식
     getCart: builder.query({
-      query: (page = 0) => ({ url: '/cart', params: { page } }),
+      query: (page = 0) => ({ url: '/cart/get', params: { page } }),
       transformResponse: (res) => {
         const d = res.data ?? res
         return {
