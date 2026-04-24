@@ -142,7 +142,7 @@ export default function CheckoutPage() {
     }
 
     render()
-  }, [widgets, finalAmount > 0, widgetsRendered]) // eslint-disable-line
+  }, [widgets, finalAmount, widgetsRendered]) // eslint-disable-line
 
   // 금액 변경 시 위젯 금액 동기화
   useEffect(() => {
