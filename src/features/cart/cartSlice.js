@@ -3,14 +3,14 @@ import { createSlice } from '@reduxjs/toolkit'
 /**
  * cartSlice — 장바구니 체크 UI 상태만 관리
  *
- * 서버 GET /cart/ 응답에 선택 상태가 포함되지 않으므로 Redux가 UI 선택 상태를 관리.
- * checkedItemIds 원소: `${productId}-${optionId ?? 'none'}` 형식의 문자열 키.
+ * 서버 GET /cart?page={page} 응답의 isSelected 필드로 페이지 로드 시 동기화 (initCheckedItems).
+ * checkedItemIds 원소: `${productId}-${optionId}` 형식의 문자열 키 (optionId=0 sentinel 포함).
  *
  * 체크 토글 시 selectCartItem mutation도 함께 호출하여 서버에 선택 상태 저장.
  */
 
 const initialState = {
-  /** 선택된(체크된) 장바구니 아이템 키 목록 — `${productId}-${optionId ?? 'none'}` */
+  /** 선택된(체크된) 장바구니 아이템 키 목록 — `${productId}-${optionId}` */
   checkedItemIds: [],
 }
 
@@ -18,7 +18,7 @@ const cartSlice = createSlice({
   name: 'cart',
   initialState,
   reducers: {
-    /** 예약 — 향후 서버 선택 상태 반환 시 사용 */
+    /** 페이지 로드 시 서버 isSelected 기준으로 체크 상태 초기화 */
     initCheckedItems(state, action) {
       state.checkedItemIds = action.payload
     },

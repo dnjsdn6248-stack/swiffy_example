@@ -3,18 +3,25 @@ import { apiSlice } from './apiSlice'
 export const cartApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
 
-    // GET /cart/
+    // GET /cart?page={page}
     getCart: builder.query({
-      query: () => ({ url: '/cart/' }),
+      query: (page = 0) => ({ url: '/cart', params: { page } }),
       transformResponse: (res) => {
         const d = res.data ?? res
         return {
-          userId: d.userId,
+          userId:      d.userId,
           items: (d.items ?? []).map((item) => ({
-            productId: item.productId,
-            optionId:  item.optionId ?? null,
-            quantity:  item.quantity ?? 1,
+            productId:  item.productId,
+            optionId:   item.optionId ?? 0,
+            quantity:   item.quantity ?? 1,
+            isSelected: item.isSelected ?? false,
           })),
+          page:        d.page ?? 0,
+          size:        d.size ?? 5,
+          totalItems:  d.totalItems ?? 0,
+          totalPages:  d.totalPages ?? 0,
+          hasNext:     d.hasNext ?? false,
+          hasPrevious: d.hasPrevious ?? false,
         }
       },
       providesTags: (result) =>
@@ -22,7 +29,7 @@ export const cartApi = apiSlice.injectEndpoints({
           ? [
               ...result.items.map(({ productId, optionId }) => ({
                 type: 'Cart',
-                id: `${productId}-${optionId ?? 'none'}`,
+                id: `${productId}-${optionId}`,
               })),
               { type: 'Cart', id: 'LIST' },
             ]
@@ -35,39 +42,39 @@ export const cartApi = apiSlice.injectEndpoints({
       invalidatesTags: [{ type: 'Cart', id: 'LIST' }],
     }),
 
-    // PUT /cart/frontend/item/quantity — quantity=0 이면 삭제
+    // PUT /cart/quantity
     updateCartItemQuantity: builder.mutation({
-      query: (body) => ({ url: '/cart/frontend/item/quantity', method: 'PUT', body }),
+      query: (body) => ({ url: '/cart/quantity', method: 'PUT', body }),
       invalidatesTags: [{ type: 'Cart', id: 'LIST' }],
     }),
 
-    // PUT /cart/frontend/item/option
+    // PUT /cart/option
     updateCartItemOption: builder.mutation({
-      query: (body) => ({ url: '/cart/frontend/item/option', method: 'PUT', body }),
+      query: (body) => ({ url: '/cart/option', method: 'PUT', body }),
       invalidatesTags: [{ type: 'Cart', id: 'LIST' }],
     }),
 
-    // DELETE /cart/frontend/item
+    // DELETE /cart
     removeCartItem: builder.mutation({
-      query: (body) => ({ url: '/cart/frontend/item', method: 'DELETE', body }),
+      query: (body) => ({ url: '/cart', method: 'DELETE', body }),
       invalidatesTags: [{ type: 'Cart', id: 'LIST' }],
     }),
 
-    // PUT /cart/frontend/item/select — 개별 선택 상태 (응답에 선택 상태 미포함)
+    // PUT /cart/select
     selectCartItem: builder.mutation({
-      query: (body) => ({ url: '/cart/frontend/item/select', method: 'PUT', body }),
+      query: (body) => ({ url: '/cart/select', method: 'PUT', body }),
       invalidatesTags: [{ type: 'Cart', id: 'LIST' }],
     }),
 
-    // PUT /cart/frontend/item/select-all
+    // PUT /cart/select-all
     selectAllCartItems: builder.mutation({
-      query: (body) => ({ url: '/cart/frontend/item/select-all', method: 'PUT', body }),
+      query: (body) => ({ url: '/cart/select-all', method: 'PUT', body }),
       invalidatesTags: [{ type: 'Cart', id: 'LIST' }],
     }),
 
-    // DELETE /cart/frontend/item/selected
+    // DELETE /cart/selected
     removeSelectedCartItems: builder.mutation({
-      query: () => ({ url: '/cart/frontend/item/selected', method: 'DELETE' }),
+      query: () => ({ url: '/cart/selected', method: 'DELETE' }),
       invalidatesTags: [{ type: 'Cart', id: 'LIST' }],
     }),
 

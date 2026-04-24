@@ -14,6 +14,7 @@ import { useAppDispatch } from '../hooks/useAppDispatch'
 import { useAppSelector } from '../hooks/useAppSelector'
 import {
   selectCheckedItemIds,
+  initCheckedItems,
   toggleCheckItem,
   checkAllItems,
   uncheckAllItems,
@@ -21,10 +22,8 @@ import {
 import Pagination from '../shared/components/Pagination'
 import Spinner from '../shared/components/Spinner'
 
-const PAGE_SIZE = 3
-
 /** productId + optionId 조합으로 고유 키 생성 */
-const itemKey = (item) => `${item.productId}-${item.optionId ?? 'none'}`
+const itemKey = (item) => `${item.productId}-${item.optionId ?? 0}`
 
 // ─── CartItemRow ──────────────────────────────────────────────────────────────
 // GET /product/frontend/{productId} 로 이름·이미지·가격·옵션명 조회
@@ -156,7 +155,8 @@ export default function CartPage() {
   // itemKey → 단가×수량 맵 (CartItemRow에서 상품 로드 후 보고)
   const [priceMap, setPriceMap] = useState({})
 
-  const { data, isLoading } = useGetCartQuery()
+  // 서버 페이지네이션: page는 1-indexed, API는 0-indexed
+  const { data, isLoading } = useGetCartQuery(page - 1)
   const [updateQty]        = useUpdateCartItemQuantityMutation()
   const [removeItem]       = useRemoveCartItemMutation()
   const [selectItem]       = useSelectCartItemMutation()
@@ -164,10 +164,15 @@ export default function CartPage() {
   const [removeSelected]   = useRemoveSelectedCartItemsMutation()
 
   const items      = data?.items ?? []
+  const totalPages = data?.totalPages ?? 0
   const checkedIds = useAppSelector(selectCheckedItemIds)
 
-  const totalPages    = Math.ceil(items.length / PAGE_SIZE)
-  const pagedItems    = items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  // 페이지 로드 시 서버 isSelected 기준으로 체크 상태 동기화
+  useEffect(() => {
+    if (!data?.items) return
+    dispatch(initCheckedItems(data.items.filter((i) => i.isSelected).map(itemKey)))
+  }, [data]) // eslint-disable-line
+
   const isSelectedAll = items.length > 0 && items.every((i) => checkedIds.includes(itemKey(i)))
 
   // ── 합계 계산 ────────────────────────────────────────────────────────────────
@@ -260,7 +265,7 @@ export default function CartPage() {
             </div>
           )}
 
-          {pagedItems.map((item) => (
+          {items.map((item) => (
             <CartItemRow
               key={itemKey(item)}
               item={item}
