@@ -9,6 +9,7 @@
 
 - 장바구니에서 체크된 상품(`checkedItemIds`)이 1개 이상이어야 정상 진입.
 - 체크된 상품이 없으면 "주문할 상품이 없습니다" 화면 + 장바구니 이동 버튼 표시.
+- 장바구니 데이터는 `useGetCartQuery(0)` — 명시적으로 `page=0` 전달 (`/cart/get?page=0`).
 
 ---
 
@@ -104,9 +105,12 @@ Header (sticky)
 ## Toss 결제위젯 초기화 순서
 
 1. `loadTossPayments(VITE_TOSS_CLIENT_KEY)` → SDK 로드
-2. `tp.widgets({ customerKey: user.userId })` → 위젯 인스턴스 생성
-3. `widgets.setAmount()` + `widgets.renderPaymentMethods()` + `widgets.renderAgreement()` → 렌더
-4. 금액 변경 시 `widgets.setAmount()` 재호출로 동기화
+2. `tp.widgets({ customerKey: String(user.userId) })` → 위젯 인스턴스 생성 (`customerKey`는 반드시 문자열)
+3. `widgets.setAmount({ currency: 'KRW', value: finalAmount })` 후 `renderPaymentMethods` + `renderAgreement` → 렌더 (1회)
+4. `finalAmount` 변경 시 `widgets.setAmount()` 재호출로 동기화
+
+> **useEffect 의존성 주의**: 위젯 렌더 useEffect 의존성 배열은 `[widgets, finalAmount, widgetsRendered]`.  
+> `finalAmount > 0` (boolean)이 아닌 `finalAmount` (number) 그대로 사용해야 금액 변경을 정확히 감지한다.
 
 ---
 

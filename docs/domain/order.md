@@ -21,6 +21,7 @@ Order Server API에서 제공하는 order_state 코드 정의입니다.
 | `INVENTORY_RELEASED`           | 재고예약해제완료 | 주문 취소/실패로 인한 재고 복구 |
 | `INVENTORY_RELEASE_FAILED`     | 재고예약해제실패 | 재고 복구 프로세스 오류         |
 | `ORDER_COMPLETED`              | 주문완료         | 모든 주문 과정 정상 종료        |
+| `ORDER_CANCELLED`              | 주문취소         | 주문 취소 처리 완료             |
 
 ---
 
@@ -34,7 +35,6 @@ Order Server API에서 제공하는 order_state 코드 정의입니다.
 ❌ : 옵션
 | Name | Type | Required | Description |
 | :--- | :--- | :---: | :--- |
-| `user_id` | `Number` | ✅ | 사용자 ID |
 | `user_name` | `String` | ❌ | 주문자 이름 |
 | `receiver_name` | `String` | ❌ | 수령인 이름 |
 | `receiver_phone` | `String` | ❌ | 수령인 연락처 |
@@ -43,6 +43,8 @@ Order Server API에서 제공하는 order_state 코드 정의입니다.
 | `items[].productId` | `Number` | ✅ | 상품 ID |
 | `items[].optionId` | `Number` | ✅ | 옵션 ID |
 | `items[].quantity` | `Number` | ✅ | 수량 |
+
+> `user_id`는 서버가 인증 컨텍스트(HttpOnly 쿠키)에서 직접 추출하므로 요청 body에 포함하지 않는다.
 
 ### 배송 메시지 처리 규칙
 
@@ -59,7 +61,6 @@ receiver_addr = "[우편번호] [기본주소] [추가주소] [나머지주소] 
 
 ```json
 {
-  "user_id": 1,
   "user_name": "홍길동",
   "receiver_name": "홍길동",
   "receiver_phone": "010-1234-5678",
@@ -82,6 +83,13 @@ receiver_addr = "[우편번호] [기본주소] [추가주소] [나머지주소] 
 ### Success Response
 
 - **Code:** `201 Created`
+
+```
+200001
+```
+
+> 응답 body는 생성된 주문 ID(`Long`)를 plain text로 반환한다 (JSON 객체 아님).  
+> `src/api/orderApi.js` `createOrder` `transformResponse`에서 `typeof res === 'number' ? res : Number(res)` 로 orderId를 추출.
 
 ### Error Response
 
@@ -246,7 +254,7 @@ GET /api/v1/orders?start_date=2026-04-01&end_date=2026-04-20&status=ORDER_COMPLE
 
 - **Code:** `204 No Content`
 
-사용자의 주문 내역이 없는 경우입니다.
+사용자의 주문 내역이 없는 경우. 응답 body 없음. `transformResponse`에서 `res`가 falsy이면 빈 배열 반환.
 
 ### Error Response
 
@@ -272,9 +280,7 @@ GET /api/v1/orders?start_date=2026-04-01&end_date=2026-04-20&status=ORDER_COMPLE
 
 - **Code:** `202 Accepted`
 
-### Current Behavior
-
-- **Code:** `409 Conflict`
+응답 body 없음.
 
 ### Error Response
 

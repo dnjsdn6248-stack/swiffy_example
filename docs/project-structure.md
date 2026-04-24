@@ -1,6 +1,6 @@
 # 프로젝트 구조
 
-기준일: 2026-04-24 (react-day-picker·date-fns 추가)
+기준일: 2026-04-24 (react-day-picker·date-fns 추가 / cart API URL 변경 / CheckoutPage 배송메시지·Toss위젯 수정 / searchApi 네비게이션·리뷰헤더 추가)
 
 ---
 
@@ -73,7 +73,7 @@ src/
 │   ├── ProductDetailPage.jsx     /product/detail/:id
 │   ├── BestSellerPage.jsx        /best
 │   ├── CartPage.jsx              /cart (보호)
-│   ├── CheckoutPage.jsx          /checkout (보호)
+│   ├── CheckoutPage.jsx          /checkout (보호) — 배송지·배송메시지 입력, Toss 결제위젯
 │   ├── PaymentSuccessPage.jsx    /payment/success (보호) — Toss 인증 성공 콜백, confirmPayment 호출
 │   ├── PaymentFailPage.jsx       /payment/fail (보호) — Toss 인증 실패 콜백, 오류 표시
 │   ├── OrderPage.jsx             /order/list (보호)
@@ -215,7 +215,7 @@ store = {
 |---|---|---|---|
 | `authApi.js` | 인증·소셜·이메일 인증·약관·getMe | auth-server / user-server | `Auth` |
 | `productApi.js` | 상품 상세·옵션·카테고리 트리·요약 | product-server | `Product`, `Category` |
-| `searchApi.js` | 검색·베스트셀러·배너·해시태그탭 | search-server | `Search` |
+| `searchApi.js` | 검색·베스트셀러·배너·해시태그탭·GNB 네비게이션·리뷰 헤더 | search-server | `Search` |
 | `categoryApi.js` | 카테고리 목록 (GNB·필터용) | search-server | `Category` |
 | `cartApi.js` | 장바구니 CRUD | cart-server | `Cart` |
 | `orderApi.js` | 주문 생성·조회·취소·이력 | order-server | `Order` |
@@ -273,7 +273,7 @@ GET /users/me ─────────►  로그인 사용자 정보 반환
 | Mock 시스템 | 완전 제거됨 (2026-04). 실서버 직접 연동. |
 | MyPageLayout | CLAUDE.md 목표 아키텍처에는 존재하나 현재 미구현 (각 마이페이지는 독립 페이지) |
 | baseQuery.js | 별도 파일 없음 — withReauth 로직이 `src/api/apiSlice.js` 내부에 포함됨 |
-| createOrder 응답 | 서버가 text/plain 반환 — orderId를 정규식으로 파싱. 응답 포맷 변경 시 결제 플로우 중단됨 |
+| createOrder 응답 | 서버가 text/plain(`200001`)으로 orderId 반환 — `transformResponse`에서 `typeof res === 'number' ? res : Number(res)` 로 파싱. 응답 포맷 변경 시 결제 플로우 중단됨 |
 | cancelOrder | 서버 saga 비활성화로 현재 409 반환. 취소 UI 구현 시 서버 상태 확인 필요 |
 | constants.js 누락 | `RETURN_DEADLINE_DAYS`, `ORDER_PAGE_SIZE`, `ORDER_STATUS` 등 order.md에 명시된 상수가 실제 코드에 없음 |
 | .env 마지막 줄 개행 | `.env` 파일 마지막 줄에 개행문자가 없으면 dotenv 파서가 해당 줄을 읽지 못함. `VITE_TOSS_CLIENT_KEY`가 마지막 줄이면 미적용됨. `.env` 편집 후 반드시 마지막 줄 뒤에 개행 확인 (`cat -A .env`로 `$` 유무 확인) |

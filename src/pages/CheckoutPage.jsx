@@ -72,7 +72,7 @@ export default function CheckoutPage() {
   const { user } = useAuth()
 
   const checkedIds = useAppSelector(selectCheckedItemIds)
-  const { data: cartData, isLoading: cartLoading } = useGetCartQuery()
+  const { data: cartData, isLoading: cartLoading } = useGetCartQuery(0)
 
   const checkedItems = (cartData?.items ?? []).filter((i) => checkedIds.includes(itemKey(i)))
 
@@ -128,7 +128,7 @@ export default function CheckoutPage() {
     loadTossPayments(import.meta.env.VITE_TOSS_CLIENT_KEY)
       .then((tp) => {
         if (!mounted) return
-        const w = tp.widgets({ customerKey: user.userId })
+        const w = tp.widgets({ customerKey: String(user.userId) })
         setWidgets(w)
       })
       .catch(() => toast.error('결제위젯 초기화에 실패했습니다.'))
@@ -154,13 +154,13 @@ export default function CheckoutPage() {
     }
 
     render()
-  }, [widgets, finalAmount > 0, widgetsRendered]) // eslint-disable-line
+  }, [widgets, finalAmount, widgetsRendered]) // eslint-disable-line
 
   // 금액 변경 시 위젯 금액 동기화
   useEffect(() => {
     if (!widgetsRendered || !widgets || finalAmount <= 0) return
     widgets.setAmount({ currency: 'KRW', value: finalAmount }).catch(() => {})
-  }, [finalAmount]) // eslint-disable-line
+  }, [finalAmount, widgetsRendered]) // eslint-disable-line
 
   // ── Mutations ───────────────────────────────────────────────────────────────
   const [createOrder] = useCreateOrderMutation()
@@ -188,7 +188,6 @@ export default function CheckoutPage() {
     try {
       // 1. 주문 생성
       const orderResult = await createOrder({
-        user_id: Number(user.userId),
         user_name: user.name ?? '',
         receiver_name: form.recipientName,
         receiver_phone: form.phone,
