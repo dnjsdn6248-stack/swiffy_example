@@ -5,6 +5,7 @@ import {
   useUpdateCartItemQuantityMutation,
   useUpdateCartItemOptionMutation,
   useRemoveCartItemMutation,
+  useRemoveSelectedCartItemsMutation,
   useSelectCartItemMutation,
   useSelectAllCartItemsMutation,
 } from '../api/cartApi'
@@ -14,6 +15,7 @@ import { useAppSelector } from '../hooks/useAppSelector'
 import {
   selectCheckedItemIds,
   initCheckedItems,
+  mergeCheckedItems,
   toggleCheckItem,
   checkAllItems,
   uncheckAllItems,
@@ -24,9 +26,8 @@ import Spinner from '../shared/components/Spinner'
 const itemKey = (item) => `${item.productId}-${item.optionId ?? 0}`
 
 // ─── CartItemRow ──────────────────────────────────────────────────────────────
-function CartItemRow({ item, checked, onToggle, onQtyChange, onRemove, onOrder, onPriceReady }) {
+function CartItemRow({ item, checked, onToggle, onQtyChange, onOptionChange, onRemove, onOrder, onPriceReady }) {
   const { data: product, isLoading } = useGetProductByIdQuery(item.productId)
-  const [updateOption] = useUpdateCartItemOptionMutation()
 
   const selectedOption = product?.options?.find((o) => String(o.id) === String(item.optionId)) ?? null
   const unitPrice      = (product?.price ?? 0) + (selectedOption?.extra ?? 0)
@@ -35,7 +36,7 @@ function CartItemRow({ item, checked, onToggle, onQtyChange, onRemove, onOrder, 
   const handleOptionChange = (e) => {
     const newOptionId = Number(e.target.value)
     if (!newOptionId) return
-    updateOption({ productId: item.productId, optionId: item.optionId, newOptionId })
+    onOptionChange(item, newOptionId)
   }
 
   const reportedRef = useRef(null)
@@ -155,34 +156,57 @@ function CartItemRow({ item, checked, onToggle, onQtyChange, onRemove, onOrder, 
 
 // ─── CartPage ─────────────────────────────────────────────────────────────────
 export default function CartPage() {
-  const navigate   = useNavigate()
-  const dispatch   = useAppDispatch()
+  const navigate = useNavigate()
+  const dispatch = useAppDispatch()
 
+  const [page, setPage]         = useState(0)
+  const [allItems, setAllItems] = useState([])
   const [priceMap, setPriceMap] = useState({})
+  /** 이미 렌더링에 반영한 페이지 번호 집합 — 더보기 refetch 시 중복 append 방지 */
+  const processedPagesRef = useRef(new Set())
 
-  const { data, isLoading } = useGetCartQuery()
-  const [updateQty]  = useUpdateCartItemQuantityMutation()
-  const [removeItem] = useRemoveCartItemMutation()
-  const [selectItem] = useSelectCartItemMutation()
-  const [selectAll]  = useSelectAllCartItemsMutation()
+  const { data, isLoading, isFetching } = useGetCartQuery(page)
+  const [updateQty]    = useUpdateCartItemQuantityMutation()
+  const [updateOption] = useUpdateCartItemOptionMutation()
+  const [removeItem]   = useRemoveCartItemMutation()
+  const [removeItems]  = useRemoveSelectedCartItemsMutation()
+  const [selectItem]   = useSelectCartItemMutation()
+  const [selectAll]    = useSelectAllCartItemsMutation()
 
-  const items      = data?.items ?? []
   const checkedIds = useAppSelector(selectCheckedItemIds)
 
-  // 페이지 로드 시 서버 isSelected 기준으로 체크 상태 동기화
   useEffect(() => {
     if (!data?.items) return
-    dispatch(initCheckedItems(data.items.filter((i) => i.isSelected && !i.isSoldOut).map(itemKey)))
+    if (page === 0) {
+      setAllItems(data.items)
+      processedPagesRef.current = new Set([0])
+      dispatch(initCheckedItems(data.items.filter((i) => i.isSelected && !i.isSoldOut).map(itemKey)))
+    } else if (!processedPagesRef.current.has(page)) {
+      processedPagesRef.current.add(page)
+      setAllItems((prev) => [...prev, ...data.items])
+      dispatch(mergeCheckedItems(data.items.filter((i) => i.isSelected && !i.isSoldOut).map(itemKey)))
+    }
   }, [data]) // eslint-disable-line
 
-  // 품절 제외한 항목만 전체선택 대상
-  const availableItems = items.filter((i) => !i.isSoldOut)
-  const isSelectedAll  = availableItems.length > 0 && availableItems.every((i) => checkedIds.includes(itemKey(i)))
+  // 서버 응답의 메타 필드 — 선택 상태 변경 시 refetch로 갱신됨
+  const allSelected       = data?.allSelected       ?? false
+  const hasSelectedItems  = data?.hasSelectedItems  ?? false
+  const selectedItemCount = data?.selectedItemCount ?? 0
+  const hasNext           = data?.hasNext           ?? false
+
+  const availableItems = allItems.filter((i) => !i.isSoldOut)
 
   // ── 합계 계산 ────────────────────────────────────────────────────────────────
-  const totalProductPrice = items
+  const totalProductPrice = allItems
     .filter((i) => checkedIds.includes(itemKey(i)))
     .reduce((sum, i) => sum + (priceMap[itemKey(i)] ?? 0), 0)
+
+  // ── 공통 리셋 — 아이템 변경 mutation 후 page 0부터 다시 로드 ─────────────────
+  const resetToFirst = () => {
+    processedPagesRef.current = new Set()
+    setPriceMap({})
+    setPage(0)
+  }
 
   // ── 핸들러 ───────────────────────────────────────────────────────────────────
   const handlePriceReady = (key, price) => {
@@ -190,7 +214,7 @@ export default function CartPage() {
   }
 
   const handleToggleAll = () => {
-    if (isSelectedAll) {
+    if (allSelected) {
       dispatch(uncheckAllItems())
       selectAll({ isSelectedAll: false })
     } else {
@@ -209,13 +233,29 @@ export default function CartPage() {
   const handleUpdateQty = (item, delta) => {
     const newQty = Math.max(1, item.quantity + delta)
     updateQty({ productId: item.productId, optionId: item.optionId, quantity: newQty })
+    resetToFirst()
+  }
+
+  const handleOptionChange = (item, newOptionId) => {
+    updateOption({ productId: item.productId, optionId: item.optionId, newOptionId })
+    resetToFirst()
   }
 
   const handleRemoveOne = (item) => {
     const key = itemKey(item)
     if (checkedIds.includes(key)) dispatch(toggleCheckItem(key))
-    setPriceMap((prev) => { const next = { ...prev }; delete next[key]; return next })
     removeItem({ productId: item.productId, optionId: item.optionId })
+    resetToFirst()
+  }
+
+  const handleRemoveSelected = () => {
+    const selectedItems = allItems
+      .filter((i) => checkedIds.includes(itemKey(i)))
+      .map((i) => ({ productId: i.productId, optionId: i.optionId }))
+    if (selectedItems.length === 0) return
+    removeItems({ items: selectedItems })
+    dispatch(uncheckAllItems())
+    resetToFirst()
   }
 
   if (isLoading) return <Spinner fullscreen />
@@ -234,29 +274,38 @@ export default function CartPage() {
             <label className="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox"
-                checked={isSelectedAll}
+                checked={allSelected}
                 onChange={handleToggleAll}
                 className="w-5 h-5 accent-[#3ea76e] cursor-pointer"
               />
               <span className="text-[15px] font-extrabold text-[#111]">
-                전체선택 ({checkedIds.length}/{availableItems.length})
+                전체선택 ({selectedItemCount}/{availableItems.length})
               </span>
             </label>
+            {hasSelectedItems && (
+              <button
+                onClick={handleRemoveSelected}
+                className="text-[13px] font-bold text-[#aaa] hover:text-red-400 transition-colors bg-transparent border-none cursor-pointer"
+              >
+                선택삭제
+              </button>
+            )}
           </div>
 
-          {items.length === 0 && (
+          {allItems.length === 0 && !isFetching && (
             <div className="text-center py-24 text-[#bbb] font-bold text-[16px]">
               장바구니가 비어있어요 🐾
             </div>
           )}
 
-          {items.map((item) => (
+          {allItems.map((item) => (
             <CartItemRow
               key={itemKey(item)}
               item={item}
               checked={checkedIds.includes(itemKey(item))}
               onToggle={() => handleToggleItem(item)}
               onQtyChange={handleUpdateQty}
+              onOptionChange={handleOptionChange}
               onRemove={() => handleRemoveOne(item)}
               onOrder={() => {
                 dispatch(initCheckedItems([itemKey(item)]))
@@ -265,6 +314,21 @@ export default function CartPage() {
               onPriceReady={handlePriceReady}
             />
           ))}
+
+          {isFetching && (
+            <div className="flex justify-center py-6">
+              <Spinner />
+            </div>
+          )}
+
+          {hasNext && !isFetching && (
+            <button
+              onClick={() => setPage((prev) => prev + 1)}
+              className="w-full h-12 rounded-full border border-[#eee] bg-white text-[14px] font-bold text-[#aaa] hover:text-[#111] hover:border-[#ddd] transition-all cursor-pointer"
+            >
+              더보기
+            </button>
+          )}
         </div>
 
         {/* 주문 예상 금액 */}

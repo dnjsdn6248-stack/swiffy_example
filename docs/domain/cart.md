@@ -1,13 +1,32 @@
 # CartServer API 명세서
 
 > Base URL: `https://localhost:8072/api/v1/cart`
-> 기준일: 2026-04-24 (전면 확정)
+> 기준일: 2026-04-24 (확정)
 
 ---
 
 ## 공통 규칙
 
-### `CartResponse`
+- 장바구니 상품 식별자: `productId + optionId`
+- 옵션 없는 상품: `optionId = 0`
+- 조회 응답: `page`, `size`, `hasNext` 포함 (더보기 방식)
+- 쓰기 응답: 현재 장바구니 전체 상태 반환
+
+---
+
+## 공통 응답 구조
+
+### 장바구니 항목
+
+| 필드         | 타입    | 설명                          |
+| ------------ | ------- | ----------------------------- |
+| `productId`  | number  | 상품 ID                       |
+| `optionId`   | number  | 옵션 ID (없으면 `0`)          |
+| `quantity`   | number  | 수량                          |
+| `isSelected` | boolean | 체크박스 선택 상태            |
+| `isSoldOut`  | boolean | 품절 여부 — UI 비활성화 처리  |
+
+### 조회 응답 (GET)
 
 ```json
 {
@@ -15,85 +34,42 @@
   "selectedItemCount": 1,
   "allSelected": false,
   "hasSelectedItems": true,
-  "items": [
-    {
-      "productId": 1002,
-      "optionId": 0,
-      "quantity": 1,
-      "isSelected": false,
-      "isSoldOut": true
-    }
-  ]
+  "page": 0,
+  "size": 10,
+  "hasNext": true,
+  "items": [...]
 }
 ```
 
-> ⚠️ 페이지네이션 없음 — 전체 항목을 한 번에 반환. 구 응답의 `page` · `size` · `totalItems` · `totalPages` · `hasNext` · `hasPrevious` 모두 제거됨.
+| 필드                 | UI 사용처                    |
+| -------------------- | ---------------------------- |
+| `allSelected`        | 전체선택 체크박스 상태       |
+| `hasSelectedItems`   | 선택삭제 버튼 활성화 여부    |
+| `selectedItemCount`  | 선택 개수 표시               |
+| `hasNext`            | 더보기 버튼 노출 여부        |
+
+### 에러 응답
+
+```json
+{
+  "status": 400,
+  "code": "VALIDATION_ERROR",
+  "message": "입력값이 올바르지 않습니다.",
+  "errors": { "productId": "must not be null" }
+}
+```
 
 ---
 
 ## 1. 장바구니 조회
 
-### `GET /api/v1/cart`
+### `GET /api/v1/cart?page={page}`
 
-- 페이지네이션 없음 — 전체 항목 반환
-- 정렬: 최신 담기 순서 내림차순
-- 장바구니 없으면 빈 응답 반환 (생성 안 함)
-- Request Parameter: 없음
+- 페이지네이션: **더보기 방식** — 응답 items를 기존 목록 뒤에 붙임
+- 첫 호출: `page=0`, 더보기 클릭 시 `page+1` 호출
+- `hasNext=false` 이면 더보기 버튼 미노출
 
-Success Response `200 OK`:
-
-```json
-{
-  "userId": 10,
-  "selectedItemCount": 1,
-  "allSelected": false,
-  "hasSelectedItems": true,
-  "items": [
-    {
-      "productId": 1002,
-      "optionId": 0,
-      "quantity": 1,
-      "isSelected": false,
-      "isSoldOut": true
-    },
-    {
-      "productId": 1001,
-      "optionId": 2001,
-      "quantity": 2,
-      "isSelected": true,
-      "isSoldOut": false
-    }
-  ]
-}
-```
-
-빈 장바구니:
-
-```json
-{
-  "userId": 10,
-  "selectedItemCount": 0,
-  "allSelected": false,
-  "hasSelectedItems": false,
-  "items": []
-}
-```
-
-호환 경로: `GET /api/v1/cart/all`
-
-### transformResponse 후 내부 필드
-
-| 내부 필드            | 백엔드 필드          | 비고                         |
-| -------------------- | -------------------- | ---------------------------- |
-| `userId`             | `userId`             |                              |
-| `selectedItemCount`  | `selectedItemCount`  | 선택된 항목 수               |
-| `allSelected`        | `allSelected`        | 전체 선택 여부               |
-| `hasSelectedItems`   | `hasSelectedItems`   | 선택 항목 존재 여부          |
-| `items[].productId`  | `productId`          |                              |
-| `items[].optionId`   | `optionId`           | 없으면 `0` (sentinel)        |
-| `items[].quantity`   | `quantity`           |                              |
-| `items[].isSelected` | `isSelected`         |                              |
-| `items[].isSoldOut`  | `isSoldOut`          | 품절 여부 — UI 비활성화 처리 |
+호환 경로: `GET /api/v1/cart/all?page={page}`
 
 ---
 
@@ -101,15 +77,12 @@ Success Response `200 OK`:
 
 ### `POST /api/v1/cart/additem`
 
-Request Body:
-
 ```json
 { "productId": 1001, "optionId": 2001, "quantity": 2 }
 ```
 
-옵션 없는 상품: `optionId` 생략 가능
-
-Success Response `201 CREATED`: CartResponse
+- 옵션 없는 상품: `optionId` 생략 가능
+- Response `201 CREATED`: CartResponse
 
 ---
 
@@ -117,11 +90,11 @@ Success Response `201 CREATED`: CartResponse
 
 ### `PUT /api/v1/cart/select-all`
 
-Request Body:
-
 ```json
 { "isSelectedAll": true }
 ```
+
+Response: CartResponse
 
 ---
 
@@ -129,14 +102,11 @@ Request Body:
 
 ### `PUT /api/v1/cart/select`
 
-- 대상: `productId + optionId`
-- `isSelected` 생략 시 `true`
-
-Request Body:
-
 ```json
 { "productId": 1001, "optionId": 2001, "isSelected": false }
 ```
+
+Response: CartResponse
 
 ---
 
@@ -144,13 +114,11 @@ Request Body:
 
 ### `PUT /api/v1/cart/option`
 
-Request Body:
-
 ```json
 { "productId": 1001, "optionId": 2001, "newOptionId": 2002 }
 ```
 
-Success Response `200 OK`: CartResponse
+Response: CartResponse
 
 ---
 
@@ -158,35 +126,44 @@ Success Response `200 OK`: CartResponse
 
 ### `PUT /api/v1/cart/quantity`
 
-- 대상: `productId + optionId`
-- `quantity = 0` 이면 해당 항목 삭제
-
-Request Body:
-
 ```json
 { "productId": 1001, "optionId": 2001, "quantity": 3 }
 ```
+
+- `quantity = 0` 이면 해당 항목 삭제
+
+Response: CartResponse
 
 ---
 
 ## 7. 단건 삭제
 
-### `DELETE /api/v1/cart`
-
-- 대상: `productId + optionId`
-
-Request Body:
+### `DELETE /api/v1/cart/selected`
 
 ```json
 { "productId": 1001, "optionId": 2001 }
 ```
 
+- 장바구니 카드 1개 삭제 버튼에 사용
+
+Response: CartResponse
+
 ---
 
-## ⚠️ 제거된 엔드포인트
+## 8. 복수 삭제
 
-| 엔드포인트              | 이유                 |
-| ----------------------- | -------------------- |
-| `DELETE /cart/selected` | 새 명세에서 제거됨   |
+### `DELETE /api/v1/cart/selecteditems`
 
-> 선택 항목 일괄 삭제 기능이 필요하다면 `DELETE /cart`를 항목별로 순차 호출하는 방식으로 대체 구현 가능.
+```json
+{
+  "items": [
+    { "productId": 1001, "optionId": 2001 },
+    { "productId": 1002, "optionId": 0 }
+  ]
+}
+```
+
+- 체크박스로 선택한 여러 상품 삭제 (선택삭제 버튼)
+- 전체 삭제 시 현재 장바구니 전체 items를 담아 호출
+
+Response: CartResponse
