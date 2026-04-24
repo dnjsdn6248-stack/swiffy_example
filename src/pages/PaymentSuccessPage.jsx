@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import { useConfirmPaymentMutation } from '@/api/paymentApi'
+import { useConfirmPaymentMutation, useSubscribePaymentEventsQuery } from '@/api/paymentApi'
 import Spinner from '@/shared/components/Spinner'
 
 export default function PaymentSuccessPage() {
@@ -12,10 +12,35 @@ export default function PaymentSuccessPage() {
   const orderId    = searchParams.get('orderId')
   const amount     = searchParams.get('amount')
 
-  const [status, setStatus]     = useState('loading') // 'loading' | 'success' | 'error'
+  const [status, setStatus]     = useState('loading')
   const [errorMsg, setErrorMsg] = useState('')
   const calledRef = useRef(false)
 
+  // SSE 구독 — orderId 유효 시에만 연결
+  const { data: sseData } = useSubscribePaymentEventsQuery(
+    Number(orderId),
+    { skip: !orderId }
+  )
+
+  // SSE payment-status 이벤트 반응 (primary)
+  useEffect(() => {
+    if (!sseData?.status) return
+    if (sseData.status === 'PAID') {
+      setStatus((prev) => prev === 'loading' ? 'success' : prev)
+    } else if (sseData.status === 'FAILED') {
+      setErrorMsg(sseData.failureMessage ?? sseData.message ?? '결제에 실패했습니다.')
+      setStatus((prev) => prev === 'loading' ? 'error' : prev)
+    }
+  }, [sseData])
+
+  // 성공 시 자동 이동 — SSE·confirm 어느 경로든 단일 진입점
+  useEffect(() => {
+    if (status !== 'success') return
+    const timer = setTimeout(() => navigate(`/order/detail/${orderId}`, { replace: true }), 2000)
+    return () => clearTimeout(timer)
+  }, [status, navigate, orderId])
+
+  // confirm 호출 — 결제 처리 트리거 + 네트워크/인증 오류 방어
   useEffect(() => {
     if (calledRef.current) return
     calledRef.current = true
@@ -32,13 +57,15 @@ export default function PaymentSuccessPage() {
       amount: Number(amount),
     })
       .unwrap()
-      .then(() => {
-        setStatus('success')
-        setTimeout(() => navigate(`/order/detail/${orderId}`, { replace: true }), 2000)
+      .then((result) => {
+        // SSE 미수신 시 confirm 응답으로 fallback 처리
+        if (result?.status === 'PAID') {
+          setStatus((prev) => prev === 'loading' ? 'success' : prev)
+        }
       })
       .catch((err) => {
-        setErrorMsg(err?.data?.message ?? err?.message ?? '결제 승인 중 오류가 발생했습니다.')
-        setStatus('error')
+        setErrorMsg((prev) => prev || (err?.data?.message ?? err?.message ?? '결제 승인 중 오류가 발생했습니다.'))
+        setStatus((prev) => prev === 'loading' ? 'error' : prev)
       })
   }, []) // eslint-disable-line
 

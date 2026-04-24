@@ -17,7 +17,7 @@ import { usePreparePaymentMutation } from '@/api/paymentApi'
 
 import useToast from '@/hooks/useToast'
 
-const itemKey = (item) => `${item.productId}-${item.optionId ?? 'none'}`
+const itemKey = (item) => `${item.productId}-${item.optionId ?? 0}`
 
 // ─── CheckoutItemRow ──────────────────────────────────────────────────────────
 function CheckoutItemRow({ item, onReady }) {

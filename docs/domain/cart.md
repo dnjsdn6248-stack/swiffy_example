@@ -1,314 +1,192 @@
-# cart Server API 명세서
+# CartServer API 명세서
 
-> **Base URL:** `https://localhost:8072/api/v1/`
+> Base URL: `https://localhost:8072/api/v1/cart`
+> 기준일: 2026-04-24 (전면 확정)
 
 ---
 
-## Cart 조회 API
+## 공통 규칙
 
-### `GET /cart/`
-
-현재 로그인한 사용자의 ACTIVE 장바구니를 조회한다. ACTIVE Cart가 없으면 새로 생성하지 않고 빈 목록을 반환한다.
-
-#### Path Parameters
-
-없음
-
-#### Request Body
-
-없음
-
-#### Success Response
-
-- **Code:** `200 OK`
+### `CartResponse`
 
 ```json
 {
   "userId": 10,
+  "selectedItemCount": 1,
+  "allSelected": false,
+  "hasSelectedItems": true,
   "items": [
-    {
-      "productId": 1001,
-      "optionId": 2001,
-      "quantity": 2
-    },
     {
       "productId": 1002,
-      "optionId": null,
-      "quantity": 1
+      "optionId": 0,
+      "quantity": 1,
+      "isSelected": false,
+      "isSoldOut": true
     }
   ]
 }
 ```
 
-#### Empty Response
+> ⚠️ 페이지네이션 없음 — 전체 항목을 한 번에 반환. 구 응답의 `page` · `size` · `totalItems` · `totalPages` · `hasNext` · `hasPrevious` 모두 제거됨.
 
-- **Code:** `200 OK`
+---
+
+## 1. 장바구니 조회
+
+### `GET /api/v1/cart`
+
+- 페이지네이션 없음 — 전체 항목 반환
+- 정렬: 최신 담기 순서 내림차순
+- 장바구니 없으면 빈 응답 반환 (생성 안 함)
+- Request Parameter: 없음
+
+Success Response `200 OK`:
 
 ```json
 {
   "userId": 10,
+  "selectedItemCount": 1,
+  "allSelected": false,
+  "hasSelectedItems": true,
+  "items": [
+    {
+      "productId": 1002,
+      "optionId": 0,
+      "quantity": 1,
+      "isSelected": false,
+      "isSoldOut": true
+    },
+    {
+      "productId": 1001,
+      "optionId": 2001,
+      "quantity": 2,
+      "isSelected": true,
+      "isSoldOut": false
+    }
+  ]
+}
+```
+
+빈 장바구니:
+
+```json
+{
+  "userId": 10,
+  "selectedItemCount": 0,
+  "allSelected": false,
+  "hasSelectedItems": false,
   "items": []
 }
 ```
 
+호환 경로: `GET /api/v1/cart/all`
+
+### transformResponse 후 내부 필드
+
+| 내부 필드            | 백엔드 필드          | 비고                         |
+| -------------------- | -------------------- | ---------------------------- |
+| `userId`             | `userId`             |                              |
+| `selectedItemCount`  | `selectedItemCount`  | 선택된 항목 수               |
+| `allSelected`        | `allSelected`        | 전체 선택 여부               |
+| `hasSelectedItems`   | `hasSelectedItems`   | 선택 항목 존재 여부          |
+| `items[].productId`  | `productId`          |                              |
+| `items[].optionId`   | `optionId`           | 없으면 `0` (sentinel)        |
+| `items[].quantity`   | `quantity`           |                              |
+| `items[].isSelected` | `isSelected`         |                              |
+| `items[].isSoldOut`  | `isSoldOut`          | 품절 여부 — UI 비활성화 처리 |
+
 ---
 
-## Cart 상품 추가 API
+## 2. 상품 담기
 
-### `POST /cart/additem`
+### `POST /api/v1/cart/additem`
 
-장바구니에 상품을 추가한다. ACTIVE Cart가 없으면 생성한다. 동일한 `productId + optionId` 상품이 이미 있으면 수량을 합산한다.
-
-> **optionId 규칙:** 옵션이 없는 상품은 `optionId: 0`으로 전송한다. 장바구니 아이템은 `productId + optionId` 조합으로 식별되므로 `0`은 "옵션 없음"을 의미하는 고정 sentinel 값이다.
-
-#### Path Parameters
-
-없음
-
-#### Request Body
+Request Body:
 
 ```json
-// 옵션이 있는 상품
-{
-  "productId": 1001,
-  "optionId": 2001,
-  "quantity": 2
-}
-
-// 옵션이 없는 상품
-{
-  "productId": 1002,
-  "optionId": 0,
-  "quantity": 1
-}
+{ "productId": 1001, "optionId": 2001, "quantity": 2 }
 ```
 
-#### Success Response
+옵션 없는 상품: `optionId` 생략 가능
 
-- **Code:** `201 CREATED`
+Success Response `201 CREATED`: CartResponse
+
+---
+
+## 3. 전체 선택 변경
+
+### `PUT /api/v1/cart/select-all`
+
+Request Body:
 
 ```json
-{
-  "userId": 10,
-  "items": [
-    {
-      "productId": 1001,
-      "optionId": 2001,
-      "quantity": 2
-    }
-  ]
-}
+{ "isSelectedAll": true }
 ```
 
 ---
 
-## Cart 상품 수량 변경 API
+## 4. 개별 선택 변경
 
-### `PUT /cart/frontend/item/quantity`
+### `PUT /api/v1/cart/select`
 
-장바구니 상품 수량을 변경한다. 대상 상품은 `cartItemId`가 아니라 `productId + optionId`로 식별한다. `quantity`가 `0`이면 해당 상품을 삭제한다.
+- 대상: `productId + optionId`
+- `isSelected` 생략 시 `true`
 
-#### Path Parameters
-
-없음
-
-#### Request Body
+Request Body:
 
 ```json
-{
-  "productId": 1001,
-  "optionId": 2001,
-  "quantity": 3
-}
-```
-
-#### Success Response
-
-- **Code:** `200 OK`
-
-```json
-{
-  "userId": 10,
-  "items": [
-    {
-      "productId": 1001,
-      "optionId": 2001,
-      "quantity": 3
-    }
-  ]
-}
+{ "productId": 1001, "optionId": 2001, "isSelected": false }
 ```
 
 ---
 
-## Cart 상품 옵션 변경 API
+## 5. 옵션 변경
 
-### `PUT /cart/frontend/item/option`
+### `PUT /api/v1/cart/option`
 
-장바구니 상품 옵션을 변경한다. 대상 상품은 `productId + optionId`로 식별하고, 변경할 옵션은 `newOptionId`로 전달한다. 변경 대상 옵션이 이미 장바구니에 있으면 수량을 합치고 기존 항목은 삭제한다.
-
-#### Path Parameters
-
-없음
-
-#### Request Body
+Request Body:
 
 ```json
-{
-  "productId": 1001,
-  "optionId": 2001,
-  "newOptionId": 2002
-}
+{ "productId": 1001, "optionId": 2001, "newOptionId": 2002 }
 ```
 
-#### Success Response
+Success Response `200 OK`: CartResponse
 
-- **Code:** `200 OK`
+---
+
+## 6. 수량 변경
+
+### `PUT /api/v1/cart/quantity`
+
+- 대상: `productId + optionId`
+- `quantity = 0` 이면 해당 항목 삭제
+
+Request Body:
 
 ```json
-{
-  "userId": 10,
-  "items": [
-    {
-      "productId": 1001,
-      "optionId": 2002,
-      "quantity": 2
-    }
-  ]
-}
+{ "productId": 1001, "optionId": 2001, "quantity": 3 }
 ```
 
 ---
 
-## Cart 상품 단건 삭제 API
+## 7. 단건 삭제
 
-### `DELETE /cart/frontend/item`
+### `DELETE /api/v1/cart`
 
-장바구니 상품을 단건 삭제한다. 대상 상품은 `cartItemId`가 아니라 `productId + optionId`로 식별한다.
+- 대상: `productId + optionId`
 
-#### Path Parameters
-
-없음
-
-#### Request Body
+Request Body:
 
 ```json
-{
-  "productId": 1001,
-  "optionId": 2001
-}
-```
-
-#### Success Response
-
-- **Code:** `200 OK`
-
-```json
-{
-  "userId": 10,
-  "items": []
-}
+{ "productId": 1001, "optionId": 2001 }
 ```
 
 ---
 
-## Cart 전체 선택 상태 변경 API
+## ⚠️ 제거된 엔드포인트
 
-### `PUT /cart/frontend/item/select-all`
+| 엔드포인트              | 이유                 |
+| ----------------------- | -------------------- |
+| `DELETE /cart/selected` | 새 명세에서 제거됨   |
 
-장바구니 전체 상품의 선택 상태를 변경한다. 선택 상태는 선택 삭제 같은 장바구니 명령 처리에만 사용하며, `GET /cart/frontend/` 응답에는 포함하지 않는다.
-
-#### Path Parameters
-
-없음
-
-#### Request Body
-
-```json
-{
-  "isSelectedAll": true
-}
-```
-
-#### Success Response
-
-- **Code:** `200 OK`
-
-```json
-{
-  "userId": 10,
-  "items": [
-    {
-      "productId": 1001,
-      "optionId": 2001,
-      "quantity": 2
-    }
-  ]
-}
-```
-
----
-
-## Cart 개별 선택 상태 변경 API (미완성)
-
-### `PUT /cart/frontend/item/select`
-
-장바구니 상품 1개의 선택 상태를 변경한다. 대상 상품은 `productId + optionId`로 식별한다. 선택 상태는 응답에 포함하지 않는다.
-
-#### Path Parameters
-
-없음
-
-#### Request Body
-
-```json
-{
-  "productId": 1001,
-  "optionId": 2001,
-  "isSelected": false
-}
-```
-
-#### Success Response
-
-- **Code:** `200 OK`
-
-```json
-{
-  "userId": 10,
-  "items": [
-    {
-      "productId": 1001,
-      "optionId": 2001,
-      "quantity": 2
-    }
-  ]
-}
-```
-
----
-
-## Cart 선택 상품 삭제 API (미완성)
-
-### `DELETE /cart/frontend/item/selected`
-
-현재 서버에 선택 상태로 저장된 장바구니 상품을 삭제한다.
-
-#### Path Parameters
-
-없음
-
-#### Request Body
-
-없음
-
-#### Success Response
-
-- **Code:** `200 OK`
-
-```json
-{
-  "userId": 10,
-  "items": []
-}
-```
+> 선택 항목 일괄 삭제 기능이 필요하다면 `DELETE /cart`를 항목별로 순차 호출하는 방식으로 대체 구현 가능.

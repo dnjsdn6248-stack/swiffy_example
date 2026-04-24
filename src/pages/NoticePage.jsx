@@ -4,7 +4,6 @@ import { ChevronRight } from 'lucide-react'
 import { useSearchNoticesQuery } from '@/api/searchApi'
 import Pagination from '@/shared/components/Pagination'
 import Spinner from '@/shared/components/Spinner'
-import { NOTICE_PAGE_SIZE } from '@/shared/utils/constants'
 
 // 백엔드 확정값 — search.md 기준
 const SEARCH_RANGES = [
@@ -27,8 +26,7 @@ export default function NoticePage() {
   const [searchType, setType]   = useState(SEARCH_TYPES[0].value)  // '제목'
 
   const { data, isLoading, isError } = useSearchNoticesQuery({
-    page:        page - 1, // 0-based API
-    size:        NOTICE_PAGE_SIZE,
+    page: page - 1, // 0-based API
     searchRange,
     ...(keyword && { keyword, searchType }),
   })
@@ -79,8 +77,8 @@ export default function NoticePage() {
               className="flex items-center justify-between py-4 px-2 border-b border-[#f0f0f0] hover:bg-[#f9f9f9] transition-colors group"
             >
               <div className="flex items-center gap-5 text-[14px] flex-1 min-w-0">
-                <span className="shrink-0 min-w-[40px] text-center text-[13px] font-bold text-[#bbb]">
-                  {notice.id}
+                <span className={`shrink-0 min-w-[40px] text-center text-[13px] font-bold ${notice.isPinned ? 'text-primary' : 'text-[#bbb]'}`}>
+                  {notice.displayLabel}
                 </span>
                 <span className="truncate text-[#444] font-medium group-hover:text-primary transition-colors">
                   {notice.title}

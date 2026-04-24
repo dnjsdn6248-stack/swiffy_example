@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useGetProductByIdQuery } from '../api/productApi'
 import { useAddCartItemMutation } from '../api/cartApi'
 import { useAddWishlistItemMutation } from '../api/wishlistApi'
+import { useAppDispatch } from '../hooks/useAppDispatch'
+import { initCheckedItems } from '../features/cart/cartSlice'
 import SwiffyReviewSummary from './ReviewPage'
 import Toast from '../features/components/ui/Toast'
 import Spinner from '../shared/components/Spinner'
@@ -123,6 +125,7 @@ function TabContent({ activeTab, product, setActiveTab }) {
 export default function ProductDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const dispatch = useAppDispatch()
 
   const { data: product, isLoading, isError } = useGetProductByIdQuery(id)
   const [addCartItem] = useAddCartItemMutation()
@@ -196,7 +199,20 @@ export default function ProductDetailPage() {
     }
   }
 
-  const handleBuy = () => { if (validate()) navigate('/checkout') }
+  const handleBuy = async () => {
+    if (!validate()) return
+    const optionId = product.options?.length > 0
+      ? (product.options.find(o => o.label === selectedOption)?.id ?? 0)
+      : 0
+    try {
+      await addCartItem({ productId: product.id, optionId, quantity: qty }).unwrap()
+      dispatch(initCheckedItems([`${product.id}-${optionId}`]))
+      navigate('/checkout')
+    } catch {
+      setAlertMsg('구매하기에 실패했습니다.')
+      setAlertNav('')
+    }
+  }
 
   return (
     <>

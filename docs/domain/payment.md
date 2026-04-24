@@ -1,6 +1,6 @@
 # Payment 도메인
 
-기준일: 2026-04-23
+기준일: 2026-04-24
 
 ## 개요
 
@@ -31,7 +31,7 @@
 | `useConfirmPaymentMutation()` | POST | `/payments/confirm` | ✅ |
 | `useCancelPaymentMutation()` | POST | `/payments/{paymentId}/cancel` | ❌ 미구현 |
 | `useGetPaymentByOrderIdQuery(orderId)` | GET | `/payments/orders/{orderId}` | ❌ 미구현 |
-| SSE 구독 | GET | `/payments/orders/{orderId}/events` | ❌ 미구현 |
+| `useSubscribePaymentEventsQuery(orderId)` | GET SSE | `/payments/orders/{orderId}/events` | ✅ |
 
 ---
 
@@ -301,12 +301,15 @@ data: {"orderId":200001,"paymentId":"pay_7b3e04d227af44d2b2a2b9f7b7f1c555","stat
 ## 프론트 연동 흐름
 
 ```
-1. createOrder       → POST /orders                → orderId 획득
-2. preparePayment    → POST /payments/prepare      → 결제 레코드 생성 (status: READY)
-3. requestPayment    → Toss 위젯 호출              → 사용자 결제 진행
-4. successUrl 리다이렉트 → /payment/success?paymentKey=...&orderId=...&amount=...
-5. confirmPayment    → POST /payments/confirm      → 최종 승인 (status: PAID)
-6. navigate          → /order/detail/:orderId
+1. createOrder              → POST /orders                      → orderId 획득
+2. preparePayment           → POST /payments/prepare            → 결제 레코드 생성 (status: READY)
+3. requestPayment           → Toss 위젯 호출                    → 사용자 결제 진행
+4. successUrl 리다이렉트    → /payment/success?paymentKey=...&orderId=...&amount=...
+5. SSE 구독 시작            → GET /payments/orders/{orderId}/events  → payment-status 이벤트 대기
+6. confirmPayment           → POST /payments/confirm            → 결제 처리 트리거
+7. SSE: payment-status      → status: PAID / FAILED             → UI 상태 전환 (primary)
+   (SSE 미수신 fallback)    → confirm 응답 status: PAID         → UI 상태 전환 (fallback)
+8. navigate                 → /order/detail/:orderId
 ```
 
 > - `prepare`와 `confirm`은 모두 프론트가 직접 호출한다.
@@ -314,3 +317,136 @@ data: {"orderId":200001,"paymentId":"pay_7b3e04d227af44d2b2a2b9f7b7f1c555","stat
 > - 프론트가 `userId`를 body에 보내지 않는다. `X-User-Id` 헤더는 gatewayserver가 인증 성공 후 내부적으로 주입한다.
 > - 승인 완료 후 최종 결제 내역 화면은 `orderserver` 기준으로 조회한다.
 > - 실시간 완료 알림이 필요하면 `GET /payments/orders/{orderId}/events` SSE를 구독한다.
+
+---
+
+## `PaymentSuccessPage.jsx` 동작 명세
+
+파일 경로: `src/pages/PaymentSuccessPage.jsx`  
+라우트: `/payment/success` (ProtectedRoute)
+
+### 역할
+
+Toss 결제 완료 후 `successUrl`로 리다이렉트된 페이지.  
+SSE(`useSubscribePaymentEventsQuery`)로 결제 상태 이벤트를 구독하고, `POST /payments/confirm`으로 결제 처리를 트리거한다.  
+`payment-status` SSE 이벤트가 최종 UI 전환의 primary 소스이며, SSE 미수신 시 confirm 응답이 fallback으로 작동한다.
+
+---
+
+### URL 파라미터 추출
+
+Toss가 `successUrl`로 리다이렉트할 때 아래 세 파라미터를 쿼리스트링으로 전달한다.
+
+| 파라미터 | 타입 | 설명 |
+|---|---|---|
+| `paymentKey` | String | Toss가 발급한 결제 키 — confirm body에 그대로 전달 |
+| `orderId` | String (→ Number) | 주문 ID — `Number(orderId)`로 변환 후 전달 |
+| `amount` | String (→ Number) | 결제 금액 — `Number(amount)`로 변환 후 전달 |
+
+```js
+const paymentKey = searchParams.get('paymentKey')
+const orderId    = searchParams.get('orderId')
+const amount     = searchParams.get('amount')
+```
+
+---
+
+### 유효성 검사
+
+세 값 중 하나라도 falsy이면 confirm을 호출하지 않고 즉시 에러 상태로 전환한다.
+
+```js
+if (!paymentKey || !orderId || !amount) {
+  setErrorMsg('결제 정보가 올바르지 않습니다.')
+  setStatus('error')
+  return
+}
+```
+
+---
+
+### 이중 호출 방어 (`calledRef`)
+
+`useRef(false)`로 만든 `calledRef`를 사용해 `useEffect` 내 confirm 호출이 단 한 번만 실행되도록 보장한다.  
+React 18 StrictMode의 `useEffect` 이중 실행, 또는 컴포넌트 재렌더링으로 인한 중복 confirm 호출을 방지한다.
+
+```js
+const calledRef = useRef(false)
+
+useEffect(() => {
+  if (calledRef.current) return
+  calledRef.current = true
+  // confirm 호출 ...
+}, [])
+```
+
+---
+
+### SSE 연결 시점
+
+`PaymentSuccessPage` 마운트 시 `orderId`가 URL 파라미터에 존재하면 즉시 연결된다.
+
+```
+Toss successUrl 리다이렉트
+  → /payment/success?paymentKey=...&orderId=123&amount=...
+  → PaymentSuccessPage 마운트
+      ├── useSubscribePaymentEventsQuery 실행
+      │     → RTK Query onCacheEntryAdded 호출
+      │     → new EventSource(...)  ← 이 시점에 GET /payments/orders/123/events 요청 발생
+      │
+      └── useEffect (calledRef) 실행
+            → confirmPayment({ paymentKey, orderId, amount }) 호출
+```
+
+SSE 연결과 confirm 호출은 페이지 마운트 시 거의 동시에 시작된다.  
+SSE가 먼저 연결을 열어두고, confirm이 서버 측 결제 처리를 트리거하는 구조다.
+
+### SSE 구독
+
+```js
+const { data: sseData } = useSubscribePaymentEventsQuery(Number(orderId), { skip: !orderId })
+```
+
+- `orderId`가 유효한 경우에만 SSE 연결 (`skip: !orderId`)
+- RTK Query `onCacheEntryAdded` 내부에서 `new EventSource()` 생성 → 실제 HTTP 연결 수립
+- `payment-status` 이벤트 수신 시 `sseData` 업데이트
+- `status: 'PAID'` 또는 `status: 'FAILED'` 수신 후 `EventSource` 자동 종료
+- 컴포넌트 언마운트(캐시 엔트리 제거) 시 `EventSource.close()` 호출
+- `withCredentials: true` — HttpOnly 쿠키 인증 자동 포함
+
+### 상태 흐름
+
+| `status` | 전환 조건 | UI |
+|---|---|---|
+| `'loading'` | 초기값 | `<Spinner />` + "결제를 승인하고 있습니다..." |
+| `'success'` | SSE `status: 'PAID'` (primary) 또는 confirm 응답 `status: 'PAID'` (fallback) | 체크 아이콘 + "결제가 완료되었습니다" + 2초 후 `/order/detail/:orderId` 이동 |
+| `'error'` | SSE `status: 'FAILED'` 또는 파라미터 누락 또는 confirm 실패 | X 아이콘 + 오류 메시지 + [장바구니로 이동 / 주문 내역 보기] 버튼 |
+
+> 상태 전환 시 이미 `'loading'`이 아니면 무시 — SSE와 confirm이 동시에 결과를 내려도 중복 전환 없음.
+
+---
+
+### 성공 후 네비게이션
+
+`status === 'success'`를 감지하는 별도 `useEffect`에서 처리 — SSE와 confirm 어느 경로로 성공해도 단일 진입점.
+
+```js
+useEffect(() => {
+  if (status !== 'success') return
+  const timer = setTimeout(() => navigate(`/order/detail/${orderId}`, { replace: true }), 2000)
+  return () => clearTimeout(timer)
+}, [status])
+```
+
+- 2초 대기 후 `/order/detail/:orderId`로 이동 (`replace: true` — 히스토리 스택에 성공 페이지 미포함)
+
+---
+
+### 에러 처리 우선순위
+
+| 소스 | 에러 메시지 |
+|---|---|
+| SSE `FAILED` | `sseData.failureMessage ?? sseData.message ?? '결제에 실패했습니다.'` |
+| confirm 네트워크/서버 오류 | `err.data.message ?? err.message ?? '결제 승인 중 오류가 발생했습니다.'` |
+
+- `errorMsg`가 이미 설정된 경우 confirm 오류 메시지로 덮어쓰지 않음 (SSE 메시지 우선 유지)
