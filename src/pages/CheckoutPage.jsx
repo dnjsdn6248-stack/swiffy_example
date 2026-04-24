@@ -148,7 +148,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (!widgetsRendered || !widgets || finalAmount <= 0) return
     widgets.setAmount({ currency: 'KRW', value: finalAmount }).catch(() => {})
-  }, [finalAmount]) // eslint-disable-line
+  }, [finalAmount, widgetsRendered]) // eslint-disable-line
 
   // ── Mutations ───────────────────────────────────────────────────────────────
   const [createOrder] = useCreateOrderMutation()
