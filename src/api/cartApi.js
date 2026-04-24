@@ -1,28 +1,25 @@
 import { apiSlice } from './apiSlice'
-import { CART_PAGE_SIZE } from '@/shared/utils/constants'
 
 export const cartApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
 
-    // GET /cart?page={page}
+    // GET /cart  — 페이지네이션 없음, 전체 항목 반환
     getCart: builder.query({
-      query: (page = 0) => ({ url: '/cart', params: { page } }),
+      query: () => ({ url: '/cart' }),
       transformResponse: (res) => {
         const d = res.data ?? res
         return {
-          userId:      d.userId,
+          userId:           d.userId,
+          selectedItemCount: d.selectedItemCount ?? 0,
+          allSelected:      d.allSelected       ?? false,
+          hasSelectedItems: d.hasSelectedItems  ?? false,
           items: (d.items ?? []).map((item) => ({
             productId:  item.productId,
-            optionId:   item.optionId ?? 0,
-            quantity:   item.quantity ?? 1,
+            optionId:   item.optionId  ?? 0,
+            quantity:   item.quantity  ?? 1,
             isSelected: item.isSelected ?? false,
+            isSoldOut:  item.isSoldOut  ?? false,
           })),
-          page:        d.page ?? 0,
-          size:        d.size ?? CART_PAGE_SIZE,
-          totalItems:  d.totalItems ?? 0,
-          totalPages:  d.totalPages ?? 0,
-          hasNext:     d.hasNext ?? false,
-          hasPrevious: d.hasPrevious ?? false,
         }
       },
       providesTags: (result) =>
@@ -43,7 +40,7 @@ export const cartApi = apiSlice.injectEndpoints({
       invalidatesTags: [{ type: 'Cart', id: 'LIST' }],
     }),
 
-    // PUT /cart/quantity
+    // PUT /cart/quantity  (quantity=0 이면 삭제)
     updateCartItemQuantity: builder.mutation({
       query: (body) => ({ url: '/cart/quantity', method: 'PUT', body }),
       invalidatesTags: [{ type: 'Cart', id: 'LIST' }],
@@ -55,7 +52,7 @@ export const cartApi = apiSlice.injectEndpoints({
       invalidatesTags: [{ type: 'Cart', id: 'LIST' }],
     }),
 
-    // DELETE /cart
+    // DELETE /cart  (단건)
     removeCartItem: builder.mutation({
       query: (body) => ({ url: '/cart', method: 'DELETE', body }),
       invalidatesTags: [{ type: 'Cart', id: 'LIST' }],
@@ -73,12 +70,6 @@ export const cartApi = apiSlice.injectEndpoints({
       invalidatesTags: [{ type: 'Cart', id: 'LIST' }],
     }),
 
-    // DELETE /cart/selected
-    removeSelectedCartItems: builder.mutation({
-      query: () => ({ url: '/cart/selected', method: 'DELETE' }),
-      invalidatesTags: [{ type: 'Cart', id: 'LIST' }],
-    }),
-
   }),
 })
 
@@ -90,5 +81,4 @@ export const {
   useRemoveCartItemMutation,
   useSelectCartItemMutation,
   useSelectAllCartItemsMutation,
-  useRemoveSelectedCartItemsMutation,
 } = cartApi

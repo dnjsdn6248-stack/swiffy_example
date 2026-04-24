@@ -1,109 +1,99 @@
 # CartServer API 명세서
 
 > Base URL: `https://localhost:8072/api/v1/cart`
+> 기준일: 2026-04-24 (전면 확정)
+
+---
 
 ## 공통 규칙
-
-### `CartPageResponse`
-
-```json
-{
-  "userId": 10,
-  "items": [
-    {
-      "productId": 1002,
-      "optionId": 0,
-      "quantity": 1,
-      "isSelected": true
-    }
-  ],
-  "page": 0,
-  "size": 5,
-  "totalItems": 1,
-  "totalPages": 1,
-  "hasNext": false,
-  "hasPrevious": false
-}
-```
 
 ### `CartResponse`
 
 ```json
 {
   "userId": 10,
-  "items": [
-    {
-      "productId": 1001,
-      "optionId": 2001,
-      "quantity": 2,
-      "isSelected": true
-    }
-  ]
-}
-```
-
----
-
-## 1. 장바구니 조회
-
-### `GET /api/v1/cart?page={page}`
-
-현재 로그인한 사용자의 장바구니를 페이지 단위로 조회한다.
-
-#### Request Parameters:
-
-| Name   | Type      | Required | Description                            |
-| :----- | :-------- | :------: | :------------------------------------- |
-| `page` | `Integer` |    ❌    | 0부터 시작하는 페이지 번호. 기본값 `0` |
-
-Success Response:
-
-- `200 OK`
-
-```json
-{
-  "userId": 10,
+  "selectedItemCount": 1,
+  "allSelected": false,
+  "hasSelectedItems": true,
   "items": [
     {
       "productId": 1002,
       "optionId": 0,
       "quantity": 1,
-      "isSelected": false
+      "isSelected": false,
+      "isSoldOut": true
+    }
+  ]
+}
+```
+
+> ⚠️ 페이지네이션 없음 — 전체 항목을 한 번에 반환. 구 응답의 `page` · `size` · `totalItems` · `totalPages` · `hasNext` · `hasPrevious` 모두 제거됨.
+
+---
+
+## 1. 장바구니 조회
+
+### `GET /api/v1/cart`
+
+- 페이지네이션 없음 — 전체 항목 반환
+- 정렬: 최신 담기 순서 내림차순
+- 장바구니 없으면 빈 응답 반환 (생성 안 함)
+- Request Parameter: 없음
+
+Success Response `200 OK`:
+
+```json
+{
+  "userId": 10,
+  "selectedItemCount": 1,
+  "allSelected": false,
+  "hasSelectedItems": true,
+  "items": [
+    {
+      "productId": 1002,
+      "optionId": 0,
+      "quantity": 1,
+      "isSelected": false,
+      "isSoldOut": true
     },
     {
       "productId": 1001,
       "optionId": 2001,
       "quantity": 2,
-      "isSelected": true
+      "isSelected": true,
+      "isSoldOut": false
     }
-  ],
-  "page": 0,
-  "size": 5,
-  "totalItems": 7,
-  "totalPages": 2,
-  "hasNext": true,
-  "hasPrevious": false
+  ]
 }
 ```
 
-#### Empty Response
+빈 장바구니:
 
 ```json
 {
   "userId": 10,
-  "items": [],
-  "page": 0,
-  "size": 5,
-  "totalItems": 0,
-  "totalPages": 0,
-  "hasNext": false,
-  "hasPrevious": false
+  "selectedItemCount": 0,
+  "allSelected": false,
+  "hasSelectedItems": false,
+  "items": []
 }
 ```
 
-호환 경로:
+호환 경로: `GET /api/v1/cart/all`
 
-- `GET /api/v1/cart/all?page={page}`
+### transformResponse 후 내부 필드
+
+| 내부 필드            | 백엔드 필드          | 비고                         |
+| -------------------- | -------------------- | ---------------------------- |
+| `userId`             | `userId`             |                              |
+| `selectedItemCount`  | `selectedItemCount`  | 선택된 항목 수               |
+| `allSelected`        | `allSelected`        | 전체 선택 여부               |
+| `hasSelectedItems`   | `hasSelectedItems`   | 선택 항목 존재 여부          |
+| `items[].productId`  | `productId`          |                              |
+| `items[].optionId`   | `optionId`           | 없으면 `0` (sentinel)        |
+| `items[].quantity`   | `quantity`           |                              |
+| `items[].isSelected` | `isSelected`         |                              |
+| `items[].isSoldOut`  | `isSoldOut`          | 품절 여부 — UI 비활성화 처리 |
 
 ---
 
@@ -111,44 +101,15 @@ Success Response:
 
 ### `POST /api/v1/cart/additem`
 
-장바구니에 상품을 추가한다.
-
-#### Request Body:
+Request Body:
 
 ```json
-{
-  "productId": 1001,
-  "optionId": 2001,
-  "quantity": 2
-}
+{ "productId": 1001, "optionId": 2001, "quantity": 2 }
 ```
 
-#### Success Response:
+옵션 없는 상품: `optionId` 생략 가능
 
-- `201 CREATED`
-
-```json
-{
-  "userId": 10,
-  "items": [
-    {
-      "productId": 1001,
-      "optionId": 2001,
-      "quantity": 2,
-      "isSelected": true
-    }
-  ]
-}
-```
-
-옵션 없는 상품 예시:
-
-```json
-{
-  "productId": 1002,
-  "quantity": 1
-}
-```
+Success Response `201 CREATED`: CartResponse
 
 ---
 
@@ -156,14 +117,10 @@ Success Response:
 
 ### `PUT /api/v1/cart/select-all`
 
-장바구니 전체 상품의 선택 상태를 변경한다.
-
 Request Body:
 
 ```json
-{
-  "isSelectedAll": true
-}
+{ "isSelectedAll": true }
 ```
 
 ---
@@ -172,16 +129,13 @@ Request Body:
 
 ### `PUT /api/v1/cart/select`
 
-개별 상품의 선택 상태를 변경한다.
+- 대상: `productId + optionId`
+- `isSelected` 생략 시 `true`
 
 Request Body:
 
 ```json
-{
-  "productId": 1001,
-  "optionId": 2001,
-  "isSelected": false
-}
+{ "productId": 1001, "optionId": 2001, "isSelected": false }
 ```
 
 ---
@@ -190,35 +144,13 @@ Request Body:
 
 ### `PUT /api/v1/cart/option`
 
-장바구니 상품의 옵션을 변경한다.
-
-#### Request Body:
+Request Body:
 
 ```json
-{
-  "productId": 1001,
-  "optionId": 2001,
-  "newOptionId": 2002
-}
+{ "productId": 1001, "optionId": 2001, "newOptionId": 2002 }
 ```
 
-#### Success Response
-
-- **Code:** `200 OK`
-
-```json
-{
-  "userId": 10,
-  "items": [
-    {
-      "productId": 1001,
-      "optionId": 2002,
-      "quantity": 2,
-      "isSelected": true
-    }
-  ]
-}
-```
+Success Response `200 OK`: CartResponse
 
 ---
 
@@ -226,16 +158,13 @@ Request Body:
 
 ### `PUT /api/v1/cart/quantity`
 
-장바구니 상품 수량을 변경한다.
+- 대상: `productId + optionId`
+- `quantity = 0` 이면 해당 항목 삭제
 
 Request Body:
 
 ```json
-{
-  "productId": 1001,
-  "optionId": 2001,
-  "quantity": 3
-}
+{ "productId": 1001, "optionId": 2001, "quantity": 3 }
 ```
 
 ---
@@ -244,27 +173,20 @@ Request Body:
 
 ### `DELETE /api/v1/cart`
 
-장바구니 상품 1개를 삭제한다.
+- 대상: `productId + optionId`
 
-#### Request Body:
+Request Body:
 
 ```json
-{
-  "productId": 1001,
-  "optionId": 2001
-}
-```
-
-## 8. 선택 항목 삭제
-
-### `DELETE /api/v1/cart/selected`
-
-선택된 장바구니 상품을 삭제한다.
-
-#### Request Body:
-
-```text
-없음
+{ "productId": 1001, "optionId": 2001 }
 ```
 
 ---
+
+## ⚠️ 제거된 엔드포인트
+
+| 엔드포인트              | 이유                 |
+| ----------------------- | -------------------- |
+| `DELETE /cart/selected` | 새 명세에서 제거됨   |
+
+> 선택 항목 일괄 삭제 기능이 필요하다면 `DELETE /cart`를 항목별로 순차 호출하는 방식으로 대체 구현 가능.
