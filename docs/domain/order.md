@@ -72,6 +72,13 @@ Order Server API에서 제공하는 order_state 코드 정의입니다.
 
 - **Code:** `201 Created`
 
+```json
+{ "orderId": 200001 }
+```
+
+> 게이트웨이가 `{ "data": { "orderId": 200001 } }` 형태로 감싸서 내려올 수 있음.  
+> `src/api/orderApi.js` `createOrder` `transformResponse`에서 `res.data ?? res`로 envelope를 벗긴 후 `orderId` 추출.
+
 ### Error Response
 
 - **Code:** `500 Internal Server Error`
