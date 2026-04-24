@@ -4,26 +4,14 @@ import { ChevronRight } from 'lucide-react'
 import { useSearchNoticesQuery } from '@/api/searchApi'
 import Pagination from '@/shared/components/Pagination'
 import Spinner from '@/shared/components/Spinner'
-
-// 백엔드 확정값 — search.md 기준
-const SEARCH_RANGES = [
-  { value: '일주일', label: '일주일' },
-  { value: '한달',   label: '한달'   },
-  { value: '세달',   label: '3개월'  },
-  { value: '전체',   label: '전체'   },
-]
-
-const SEARCH_TYPES = [
-  { value: '제목', label: '제목' },
-  { value: '내용', label: '내용' },
-]
+import { NOTICE_SEARCH_RANGES, NOTICE_SEARCH_TYPES } from '@/shared/utils/constants'
 
 export default function NoticePage() {
   const [page, setPage]         = useState(1) // 1-based (Pagination 컴포넌트 기준)
   const [keyword, setKeyword]   = useState('')
   const [inputValue, setInput]  = useState('')
-  const [searchRange, setRange] = useState(SEARCH_RANGES[0].value) // '일주일'
-  const [searchType, setType]   = useState(SEARCH_TYPES[0].value)  // '제목'
+  const [searchRange, setRange] = useState(NOTICE_SEARCH_RANGES[0].value) // '일주일'
+  const [searchType, setType]   = useState(NOTICE_SEARCH_TYPES[0].value)  // '제목'
 
   const { data, isLoading, isError } = useSearchNoticesQuery({
     page: page - 1, // 0-based API
@@ -108,7 +96,7 @@ export default function NoticePage() {
               onChange={(e) => { setRange(e.target.value); setPage(1) }}
               className="flex-1 px-3 py-2.5 border border-[#ddd] rounded-lg text-[14px] bg-white text-[#555] focus:outline-none focus:border-primary"
             >
-              {SEARCH_RANGES.map((r) => (
+              {NOTICE_SEARCH_RANGES.map((r) => (
                 <option key={r.value} value={r.value}>{r.label}</option>
               ))}
             </select>
@@ -117,7 +105,7 @@ export default function NoticePage() {
               onChange={(e) => setType(e.target.value)}
               className="flex-1 px-3 py-2.5 border border-[#ddd] rounded-lg text-[14px] bg-white text-[#555] focus:outline-none focus:border-primary"
             >
-              {SEARCH_TYPES.map((t) => (
+              {NOTICE_SEARCH_TYPES.map((t) => (
                 <option key={t.value} value={t.value}>{t.label}</option>
               ))}
             </select>

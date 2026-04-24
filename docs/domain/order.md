@@ -38,13 +38,24 @@ Order Server API에서 제공하는 order_state 코드 정의입니다.
 | `user_name` | `String` | ❌ | 주문자 이름 |
 | `receiver_name` | `String` | ❌ | 수령인 이름 |
 | `receiver_phone` | `String` | ❌ | 수령인 연락처 |
-| `receiver_addr` | `String` | ❌ | 배송지 주소 |
+| `receiver_addr` | `String` | ❌ | 배송지 주소 (배송 메시지 포함 시 주소 뒤에 공백으로 연결해 전송) |
 | `items` | `Array` | ✅ | 주문 상품 목록 |
 | `items[].productId` | `Number` | ✅ | 상품 ID |
 | `items[].optionId` | `Number` | ✅ | 옵션 ID |
 | `items[].quantity` | `Number` | ✅ | 수량 |
 
 > `user_id`는 서버가 인증 컨텍스트(HttpOnly 쿠키)에서 직접 추출하므로 요청 body에 포함하지 않는다.
+
+### 배송 메시지 처리 규칙
+
+백엔드 API에 `delivery_message` 전용 필드가 없으므로, 프론트엔드에서 `receiver_addr` 뒤에 공백으로 연결해 전송한다.
+
+```
+receiver_addr = "[우편번호] [기본주소] [추가주소] [나머지주소] [배송메시지]"
+```
+
+- 배송 메시지가 없으면 주소만 전송 (빈 문자열은 `filter(Boolean)` 으로 자동 제거).
+- 배송 메시지 선택지 및 직접 입력 규칙은 `docs/view/checkout.md` 참고.
 
 ### Request Body Example
 
@@ -53,7 +64,7 @@ Order Server API에서 제공하는 order_state 코드 정의입니다.
   "user_name": "홍길동",
   "receiver_name": "홍길동",
   "receiver_phone": "010-1234-5678",
-  "receiver_addr": "서울특별시 강남구 테헤란로 123",
+  "receiver_addr": "12345 서울특별시 강남구 테헤란로 123 문 앞에 놓아주세요",
   "items": [
     {
       "productId": 10,
