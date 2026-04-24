@@ -107,10 +107,10 @@ export const orderApi = apiSlice.injectEndpoints({
       providesTags: (result, error, orderId) => [{ type: 'Order', id: `CS_${orderId}` }],
     }),
 
-    /** 주문 생성 — POST /orders → 201 Created { orderId } */
+    /** 주문 생성 — POST /orders → 201 Created (plain Long orderId, body에 user_id 미포함) */
     createOrder: builder.mutation({
-      query: (body) => ({ url: '/orders', method: 'POST', body }),
-      transformResponse: (res) => { const d = res.data ?? res; return { orderId: d.orderId ?? d.order_id ?? null } },
+      query: (body) => ({ url: '/orders', method: 'POST', body, responseHandler: 'text' }),
+      transformResponse: (res) => ({ orderId: res ? Number(res) : null }),
       invalidatesTags: [{ type: 'Order', id: 'LIST' }],
       async onQueryStarted(_, { dispatch, queryFulfilled }) {
         try {
