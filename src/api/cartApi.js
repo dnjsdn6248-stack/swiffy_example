@@ -3,20 +3,23 @@ import { apiSlice } from './apiSlice'
 export const cartApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
 
-    // GET /cart  — 페이지네이션 없음, 전체 항목 반환
+    // GET /cart?page={page}  — 더보기 방식
     getCart: builder.query({
-      query: () => ({ url: '/cart' }),
+      query: (page = 0) => ({ url: '/cart', params: { page } }),
       transformResponse: (res) => {
         const d = res.data ?? res
         return {
-          userId:           d.userId,
+          userId:            d.userId,
           selectedItemCount: d.selectedItemCount ?? 0,
-          allSelected:      d.allSelected       ?? false,
-          hasSelectedItems: d.hasSelectedItems  ?? false,
+          allSelected:       d.allSelected       ?? false,
+          hasSelectedItems:  d.hasSelectedItems  ?? false,
+          page:              d.page              ?? 0,
+          size:              d.size              ?? 10,
+          hasNext:           d.hasNext           ?? false,
           items: (d.items ?? []).map((item) => ({
             productId:  item.productId,
-            optionId:   item.optionId  ?? 0,
-            quantity:   item.quantity  ?? 1,
+            optionId:   item.optionId   ?? 0,
+            quantity:   item.quantity   ?? 1,
             isSelected: item.isSelected ?? false,
             isSoldOut:  item.isSoldOut  ?? false,
           })),
@@ -52,9 +55,15 @@ export const cartApi = apiSlice.injectEndpoints({
       invalidatesTags: [{ type: 'Cart', id: 'LIST' }],
     }),
 
-    // DELETE /cart  (단건)
+    // DELETE /cart/selected  (단건)
     removeCartItem: builder.mutation({
-      query: (body) => ({ url: '/cart', method: 'DELETE', body }),
+      query: (body) => ({ url: '/cart/selected', method: 'DELETE', body }),
+      invalidatesTags: [{ type: 'Cart', id: 'LIST' }],
+    }),
+
+    // DELETE /cart/selecteditems  (복수 삭제)
+    removeSelectedCartItems: builder.mutation({
+      query: (body) => ({ url: '/cart/selecteditems', method: 'DELETE', body }),
       invalidatesTags: [{ type: 'Cart', id: 'LIST' }],
     }),
 
@@ -79,6 +88,7 @@ export const {
   useUpdateCartItemQuantityMutation,
   useUpdateCartItemOptionMutation,
   useRemoveCartItemMutation,
+  useRemoveSelectedCartItemsMutation,
   useSelectCartItemMutation,
   useSelectAllCartItemsMutation,
 } = cartApi

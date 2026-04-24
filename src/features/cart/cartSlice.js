@@ -30,6 +30,10 @@ const cartSlice = createSlice({
         state.checkedItemIds.push(id)
       }
     },
+    /** 더보기 로드 시 새 페이지의 isSelected 항목을 기존 체크 목록에 병합 */
+    mergeCheckedItems(state, action) {
+      state.checkedItemIds = [...new Set([...state.checkedItemIds, ...action.payload])]
+    },
     checkAllItems(state, action) {
       state.checkedItemIds = action.payload
     },
@@ -41,6 +45,7 @@ const cartSlice = createSlice({
 
 export const {
   initCheckedItems,
+  mergeCheckedItems,
   toggleCheckItem,
   checkAllItems,
   uncheckAllItems,
