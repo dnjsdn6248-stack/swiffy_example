@@ -211,7 +211,7 @@ store = {
 | 파일 | 담당 도메인 | 백엔드 서버 | 주요 태그 |
 |---|---|---|---|
 | `authApi.js` | 인증·소셜·이메일 인증·약관·getMe | auth-server / user-server | `Auth` |
-| `productApi.js` | 상품 상세·목록·메인 섹션 데이터 | product-server | `Product` |
+| `productApi.js` | 상품 상세·옵션·카테고리 트리·요약 | product-server | `Product`, `Category` |
 | `searchApi.js` | 검색·베스트셀러·배너·해시태그탭 | search-server | `Search` |
 | `categoryApi.js` | 카테고리 목록 (GNB·필터용) | search-server | `Category` |
 | `cartApi.js` | 장바구니 CRUD | cart-server | `Cart` |
