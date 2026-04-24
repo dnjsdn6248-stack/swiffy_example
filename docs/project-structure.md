@@ -33,9 +33,9 @@ src/
 │   │   ├── useSignupForm.js
 │   │   └── useEmailVerify.js
 │   ├── cart/
-│   │   └── cartSlice.js          checkedItemIds — 서버 isSelected와 동기화 (initCheckedItems)
+│   │   └── cartSlice.js          checkedItemIds — 서버 isSelected와 동기화 (initCheckedItems / mergeCheckedItems)
 │   ├── category/
-│   │   └── categorySlice.js      selectedCategoryId UI 상태만
+│   │   └── categorySlice.js      selectedCategoryId UI 상태 (actions: selectCategory, clearSelectedCategory)
 │   ├── order/
 │   │   └── orderSlice.js         lastCreatedOrder + pagination UI 상태
 │   ├── product/
@@ -172,9 +172,12 @@ store = {
   },
   category: {
     selectedCategoryId: number | null,
+    // actions: selectCategory(id) | clearSelectedCategory()
+    // selector: selectSelectedCategoryId
   },
   cart: {
-    checkedItemIds: string[],       // `${productId}-${optionId ?? 'none'}` 형식 키 배열
+    checkedItemIds: string[],       // `${productId}-${optionId ?? 0}` 형식 키 배열
+    // actions: initCheckedItems | mergeCheckedItems | toggleCheckItem | checkAllItems | uncheckAllItems
   },
   order: {
     lastCreatedOrder: Order | null, // 주문완료 직후 임시 보관

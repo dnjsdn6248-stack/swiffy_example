@@ -56,6 +56,15 @@ function CheckoutItemRow({ item, onReady }) {
   )
 }
 
+const DELIVERY_MESSAGES = [
+  '문 앞에 놓아주세요',
+  '경비실에 맡겨주세요',
+  '배송 전 연락 바랍니다',
+  '부재 시 문 앞에 놓아주세요',
+  '직접 받겠습니다',
+  '직접 입력',
+]
+
 // ─── CheckoutPage ─────────────────────────────────────────────────────────────
 export default function CheckoutPage() {
   const navigate = useNavigate()
@@ -85,6 +94,7 @@ export default function CheckoutPage() {
 
   // ── 배송지 폼 ───────────────────────────────────────────────────────────────
   const [isAddrOpen, setIsAddrOpen] = useState(true)
+
   const [form, setForm] = useState({
     recipientName: '',
     phone: '',
@@ -92,6 +102,8 @@ export default function CheckoutPage() {
     baseAddress: '',
     extraAddress: '',
     detailAddress: '',
+    deliveryMsg: '',
+    customMsg: '',
   })
 
   // 사용자 정보 자동 채움
@@ -180,8 +192,13 @@ export default function CheckoutPage() {
         user_name: user.name ?? '',
         receiver_name: form.recipientName,
         receiver_phone: form.phone,
-        receiver_addr: [form.postcode, form.baseAddress, form.extraAddress, form.detailAddress]
-          .filter(Boolean).join(' '),
+        receiver_addr: [
+          form.postcode,
+          form.baseAddress,
+          form.extraAddress,
+          form.detailAddress,
+          (form.deliveryMsg === '직접 입력' ? form.customMsg : form.deliveryMsg) || '',
+        ].filter(Boolean).join(' '),
         items: checkedItems.map((i) => ({
           productId: i.productId,
           optionId: (productMap[i.productId]?.options?.length ?? 0) > 0 ? i.optionId : 0,
@@ -327,6 +344,30 @@ export default function CheckoutPage() {
                   className="h-12 bg-white border border-[#eee] rounded-2xl px-5 font-bold text-[14px] outline-none focus:border-[#3ea76e] transition-all"
                   placeholder="01012345678"
                 />
+
+                <label className="text-[14px] font-bold text-[#555] self-start pt-3">배송 메시지</label>
+                <div className="space-y-2">
+                  <select
+                    value={form.deliveryMsg}
+                    onChange={(e) => setForm((f) => ({ ...f, deliveryMsg: e.target.value, customMsg: '' }))}
+                    className="w-full h-12 bg-white border border-[#eee] rounded-2xl px-5 font-bold text-[14px] outline-none focus:border-[#3ea76e] transition-all appearance-none cursor-pointer text-[#555]"
+                  >
+                    <option value="">배송 메시지를 선택하세요</option>
+                    {DELIVERY_MESSAGES.map((msg) => (
+                      <option key={msg} value={msg}>{msg}</option>
+                    ))}
+                  </select>
+                  {form.deliveryMsg === '직접 입력' && (
+                    <input
+                      type="text"
+                      value={form.customMsg}
+                      onChange={(e) => setForm((f) => ({ ...f, customMsg: e.target.value }))}
+                      maxLength={100}
+                      className="w-full h-12 bg-white border border-[#eee] rounded-2xl px-5 font-bold text-[14px] outline-none focus:border-[#3ea76e] transition-all"
+                      placeholder="배송 메시지를 입력하세요 (최대 100자)"
+                    />
+                  )}
+                </div>
 
               </div>
             )}
