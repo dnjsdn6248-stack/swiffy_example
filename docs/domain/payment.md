@@ -286,6 +286,19 @@ data: {"orderId":200001,"paymentId":"pay_7b3e04d227af44d2b2a2b9f7b7f1c555","stat
 
 ---
 
+## Toss 위젯 초기화 주의사항
+
+```js
+// CheckoutPage.jsx — SDK 초기화
+const w = tp.widgets({ customerKey: String(user.userId) })
+```
+
+- `customerKey`는 **string 타입** 필수 (Toss SDK 요구사항). `user.userId`가 숫자로 오는 경우를 대비해 반드시 `String()`으로 변환.
+- 허용 문자: 알파벳·숫자·`@`, `.`, `_`, `-`, `+`, `=` (2~300자)
+- 이메일·전화번호 등 추측 가능한 값은 customerKey로 사용 금지 (Toss 정책)
+
+---
+
 ## 환경변수
 
 | 변수 | 설명 | fallback |
