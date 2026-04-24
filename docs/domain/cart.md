@@ -63,13 +63,11 @@
 
 ## 1. 장바구니 조회
 
-### `GET /api/v1/cart?page={page}`
+### `GET /api/v1/cart/get?page={page}`
 
 - 페이지네이션: **더보기 방식** — 응답 items를 기존 목록 뒤에 붙임
 - 첫 호출: `page=0`, 더보기 클릭 시 `page+1` 호출
 - `hasNext=false` 이면 더보기 버튼 미노출
-
-호환 경로: `GET /api/v1/cart/all?page={page}`
 
 ---
 
