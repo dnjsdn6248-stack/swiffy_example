@@ -16,7 +16,37 @@ export const paymentApi = apiSlice.injectEndpoints({
       invalidatesTags: [{ type: 'Order', id: 'LIST' }, { type: 'Cart', id: 'LIST' }],
     }),
 
+    /** 결제 상태 SSE 구독 — confirmPayment 트리거 후 payment-status 이벤트 수신 */
+    subscribePaymentEvents: builder.query({
+      queryFn: () => ({ data: { status: null } }),
+      async onCacheEntryAdded(orderId, { updateCachedData, cacheDataLoaded, cacheEntryRemoved }) {
+        const es = new EventSource(
+          `${import.meta.env.VITE_API_BASE_URL}/payments/orders/${orderId}/events`,
+          { withCredentials: true }
+        )
+        try {
+          await cacheDataLoaded
+          es.addEventListener('payment-status', (e) => {
+            try {
+              const data = JSON.parse(e.data)
+              updateCachedData(() => data)
+              if (data.status === 'PAID' || data.status === 'FAILED') es.close()
+            } catch {}
+          })
+          es.onerror = () => es.close()
+        } catch {
+          es.close()
+        }
+        await cacheEntryRemoved
+        es.close()
+      },
+    }),
+
   }),
 })
 
-export const { usePreparePaymentMutation, useConfirmPaymentMutation } = paymentApi
+export const {
+  usePreparePaymentMutation,
+  useConfirmPaymentMutation,
+  useSubscribePaymentEventsQuery,
+} = paymentApi

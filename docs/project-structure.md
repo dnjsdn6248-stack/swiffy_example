@@ -1,6 +1,6 @@
 # 프로젝트 구조
 
-기준일: 2026-04-23 (정기배송 전면 제거, WishListPage 장바구니 연결)
+기준일: 2026-04-24 (react-day-picker·date-fns 추가)
 
 ---
 
@@ -241,6 +241,24 @@ GET /users/me ─────────►  로그인 사용자 정보 반환
 401 수신 시 → Gateway가 refresh_token으로 자동 갱신 시도
 갱신 실패 시 → dispatch(logout()) → getMe 캐시 null 초기화 → ProtectedRoute가 /login 리다이렉트
 ```
+
+---
+
+## 주요 외부 라이브러리
+
+| 패키지 | 버전 | 용도 |
+|---|---|---|
+| `react-day-picker` | ^9.14.0 | 날짜 선택 UI 컴포넌트 (달력 팝업 등) |
+| `date-fns` | ^4.1.0 | 날짜 포맷·연산 유틸 (`format`, `parseISO`, `differenceInDays` 등) |
+| `@tosspayments/tosspayments-sdk` | ^2.7.0 | Toss Payments 결제 위젯 SDK |
+| `@clroot/react-kakao-postcode` | ^1.0.0 | 카카오 주소 검색 팝업 (배송지 입력) |
+| `lucide-react` | ^1.7.0 | 아이콘 컴포넌트 |
+| `tailwindcss` | ^4.2.2 | Utility-first CSS (`tailwind.config.js` 없음 — `src/index.css` 설정) |
+| `tailwindcss-animate` | ^1.0.7 | Tailwind 애니메이션 플러그인 |
+| `daisyui` | ^5.5.19 | Tailwind 기반 UI 컴포넌트 라이브러리 (devDependency) |
+
+> - `react-day-picker` v9는 `date-fns` v4 이상을 peer dependency로 요구한다. 두 패키지는 함께 사용해야 한다.
+> - `date-fns`는 `formatters.js` 등 날짜 관련 순수 함수에서 직접 import해 사용한다.
 
 ---
 
