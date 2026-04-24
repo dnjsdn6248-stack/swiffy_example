@@ -22,8 +22,6 @@ export default function NoticeDetailPage() {
     )
   }
 
-  // transformResponse 후 정규화된 필드 사용
-  // notice.id / notice.title / notice.isFixed / notice.createdAt / notice.images / notice.content
   const hasImages = notice.images?.length > 0
 
   return (
@@ -41,7 +39,7 @@ export default function NoticeDetailPage() {
 
         {/* 헤더 */}
         <div className="border-t border-[#111] pt-6 pb-5 border-b border-b-[#eee]">
-          {notice.isFixed && (
+          {notice.isPinned && (
             <span className="inline-block text-[11px] font-bold text-primary border border-primary rounded px-2 py-0.5 mb-3">
               공지
             </span>

@@ -1,4 +1,5 @@
 import { apiSlice } from './apiSlice'
+import { CART_PAGE_SIZE } from '@/shared/utils/constants'
 
 export const cartApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -17,7 +18,7 @@ export const cartApi = apiSlice.injectEndpoints({
             isSelected: item.isSelected ?? false,
           })),
           page:        d.page ?? 0,
-          size:        d.size ?? 5,
+          size:        d.size ?? CART_PAGE_SIZE,
           totalItems:  d.totalItems ?? 0,
           totalPages:  d.totalPages ?? 0,
           hasNext:     d.hasNext ?? false,

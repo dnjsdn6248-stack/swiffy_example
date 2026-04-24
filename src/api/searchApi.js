@@ -183,20 +183,41 @@ export const searchApi = apiSlice.injectEndpoints({
     // ── 9. 공지 검색 ─────────────────────────────────────────────────────────
     /**
      * GET /search/notices
-     * @param {{ searchRange?, searchType?, keyword?, page?, size? }} params
+     * @param {{ searchRange?, searchType?, keyword?, page? }} params
+     * size 파라미터는 서버에서 항상 10으로 고정 처리 — 미전송
      */
     searchNotices: builder.query({
       query: (params = {}) => ({ url: '/search/notices', params }),
       transformResponse: (res) => normalizePage(res, (n) => ({
-        id:              n.noticeId        ?? n.id   ?? null,
+        id:              n.id,
+        displayNo:       n.displayNo       ?? null,
+        displayLabel:    n.displayLabel    ?? String(n.id),
+        category:        n.category        ?? '',
         title:           n.title           ?? '',
-        createdAt:       n.createdAt       ?? n.created_at ?? null,
-        author:          n.author          ?? '',
-        viewCount:       n.viewCount       ?? 0,
+        isPinned:        n.isPinned        ?? false,
         noticeDetailUrl: n.noticeDetailUrl ?? null,
-        // isFixed: 고정공지 표시 방식 미확정 — 백엔드 확정 후 추가
+        createdAt:       n.createdAt       ?? null,
       })),
       providesTags: [{ type: 'Search', id: 'NOTICES' }],
+    }),
+
+    // ── 9-1. FAQ 검색 ─────────────────────────────────────────────────────
+    /**
+     * GET /faq  (경로 주의: /search/faq 아님)
+     * @param {{ searchRange?, searchType?, keyword?, page? }} params
+     * size 파라미터는 서버에서 항상 10으로 고정 처리 — 미전송
+     */
+    searchFaqs: builder.query({
+      query: (params = {}) => ({ url: '/faq', params }),
+      transformResponse: (res) => normalizePage(res, (f) => ({
+        id:           f.faqId,
+        title:        f.title         ?? '',
+        author:       f.author        ?? '',
+        createdAt:    f.createdAt     ?? null,
+        viewCount:    f.viewCount     ?? 0,
+        faqDetailUrl: f.faqDetailUrl  ?? null,
+      })),
+      providesTags: [{ type: 'FAQ', id: 'LIST' }],
     }),
 
     // ── 10. 메인 히어로 배너 ──────────────────────────────────────────────────
@@ -325,6 +346,7 @@ export const {
   useGetTrendingKeywordsQuery,
   useSearchReviewsQuery,
   useSearchNoticesQuery,
+  useSearchFaqsQuery,
   useGetMainBannersQuery,
   useGetNavigationQuery,
   useGetReviewHeaderQuery,

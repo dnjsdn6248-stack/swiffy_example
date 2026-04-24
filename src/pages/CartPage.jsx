@@ -273,7 +273,10 @@ export default function CartPage() {
               onToggle={() => handleToggleItem(item)}
               onQtyChange={handleUpdateQty}
               onRemove={() => handleRemoveOne(item)}
-              onOrder={() => navigate('/checkout')}
+              onOrder={() => {
+                dispatch(initCheckedItems([itemKey(item)]))
+                navigate('/checkout')
+              }}
               onPriceReady={handlePriceReady}
             />
           ))}
