@@ -9,12 +9,19 @@ export default function PaymentSuccessPage() {
   const [confirmPayment] = useConfirmPaymentMutation()
 
   const paymentKey = searchParams.get('paymentKey')
-  const orderId    = searchParams.get('orderId')
+
+  const rawOrderId = searchParams.get('orderId'); // 원본: "order-1486476056744642600"
+  const orderId = rawOrderId?.replace('order-', '');
+
   const amount     = searchParams.get('amount')
 
   const [status, setStatus]     = useState('loading')
   const [errorMsg, setErrorMsg] = useState('')
   const calledRef = useRef(false)
+
+  
+
+  console.log("orderId={}", orderId);
 
   // SSE 구독 — orderId 유효 시에만 연결
   const { data: sseData } = useSubscribePaymentEventsQuery(
@@ -59,7 +66,7 @@ export default function PaymentSuccessPage() {
       .unwrap()
       .then((result) => {
         // SSE 미수신 시 confirm 응답으로 fallback 처리
-        if (result?.status === 'PAID') {
+        if (result?.status === 'APPROVED') {
           setStatus((prev) => prev === 'loading' ? 'success' : prev)
         }
       })
