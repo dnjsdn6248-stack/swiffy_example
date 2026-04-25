@@ -343,6 +343,11 @@ await widgets.requestPayment({
 > step 4 이후 URL 파라미터 `orderId`가 `"order-123"` 문자열이 된다.  
 > `PaymentSuccessPage`는 이를 `Number("order-123") = NaN`으로 변환하여 `confirmPayment`·SSE 모두 실패한다.
 
+> ⚠️ **알려진 문제 ([PAYMENT-01])**: `orderId`가 Snowflake ID(64비트, 약 10¹⁸ 규모) 형태일 경우,  
+> `Number(orderId)` 변환 시 JS `Number.MAX_SAFE_INTEGER`(약 9×10¹⁵)를 초과하여 정밀도가 손실된다.  
+> 손실된 값이 `confirmPayment` body·SSE URL에 사용되면 서버가 주문을 찾지 못해 결제 승인 후에도 스피너가 무한 대기 상태가 된다.  
+> **수정 방향**: `Number(orderId)` 대신 string 그대로 전달 (SSE URL은 템플릿 리터럴이므로 string 전달 시 정상 동작).
+
 > - `prepare`와 `confirm`은 모두 프론트가 직접 호출한다.
 > - 외부 공개 경로는 모두 `gatewayserver` 기준 `/api/v1/payments/**`이다. 내부 `paymentserver` 경로 `/payments/**`를 직접 호출하지 않는다.
 > - 프론트가 `userId`를 body에 보내지 않는다. `X-User-Id` 헤더는 gatewayserver가 인증 성공 후 내부적으로 주입한다.
@@ -437,6 +442,8 @@ SSE가 먼저 연결을 열어두고, confirm이 서버 측 결제 처리를 트
 ```js
 const { data: sseData } = useSubscribePaymentEventsQuery(Number(orderId), { skip: !orderId })
 ```
+
+> ⚠️ `Number(orderId)` 는 Snowflake ID 수준의 값에서 정밀도를 잃는다 ([PAYMENT-01]). string 그대로 전달하는 것이 안전하다.
 
 - `orderId`가 유효한 경우에만 SSE 연결 (`skip: !orderId`)
 - RTK Query `onCacheEntryAdded` 내부에서 `new EventSource()` 생성 → 실제 HTTP 연결 수립

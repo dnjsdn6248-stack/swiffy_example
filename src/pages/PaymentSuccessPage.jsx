@@ -18,7 +18,7 @@ export default function PaymentSuccessPage() {
 
   // SSE 구독 — orderId 유효 시에만 연결
   const { data: sseData } = useSubscribePaymentEventsQuery(
-    Number(orderId),
+    orderId,
     { skip: !orderId }
   )
 
@@ -53,7 +53,7 @@ export default function PaymentSuccessPage() {
 
     confirmPayment({
       paymentKey,
-      orderId: Number(orderId),
+      orderId,
       amount: Number(amount),
     })
       .unwrap()
