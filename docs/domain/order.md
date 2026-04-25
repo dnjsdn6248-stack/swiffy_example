@@ -29,6 +29,8 @@ Order Server API에서 제공하는 order_state 코드 정의입니다.
 
 주문 checkout을 요청합니다.
 
+> ⚠️ **알려진 문제 ([ORDER-02])**: `src/api/orderApi.js` `createOrder`의 URL이 현재 `/orders/get`으로 설정되어 있음. 명세 기준은 `/orders`이며 일치하지 않는다.
+
 ### Request Body
 
 ✅ : 필수
