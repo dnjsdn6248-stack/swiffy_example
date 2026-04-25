@@ -175,14 +175,23 @@ export default function CheckoutPage() {
   }
 
   const handlePayment = async () => {
+
+    console.log("ok1")
+
     if (!form.recipientName || !form.postcode || !form.baseAddress) {
       toast.error('배송지를 입력해주세요.')
       return
     }
+
+    console.log("ok2")
+
     if (!form.phone) {
       toast.error('휴대폰 번호를 입력해주세요.')
       return
     }
+
+    console.log("ok3")
+    
 
     setPaying(true)
     try {
@@ -223,13 +232,13 @@ export default function CheckoutPage() {
       // 3. 위젯 금액 동기화 후 결제창 오픈
       await widgets.setAmount({ currency: 'KRW', value: amount })
       await widgets.requestPayment({
-        orderId: String(orderId),
+        orderId: `order-${orderId}`,
         orderName,
+        customerName: user.name ?? '',      
+        customerEmail: user.email ?? '',
         successUrl: `${import.meta.env.VITE_BASE_URL ?? window.location.origin}/payment/success`,
         failUrl: `${import.meta.env.VITE_BASE_URL ?? window.location.origin}/payment/fail`,
-        customerEmail: user.email ?? '',
-        customerName: user.name ?? '',
-        customerMobilePhone: (user.phoneNumber ?? '').replace(/-/g, ''),
+        // customerMobilePhone: (user.phoneNumber ?? '').replace(/-/g, ''),
       })
     } catch (err) {
       // Toss SDK 취소는 에러가 아님
