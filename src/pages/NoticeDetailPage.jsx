@@ -12,7 +12,7 @@ export default function NoticeDetailPage() {
   if (isError || !notice) {
     return (
       <div className="w-full bg-[#FCFBF9] min-h-screen">
-        <div className="max-w-[820px] mx-auto px-4 pt-16 text-center">
+        <div className="max-w-[860px] mx-auto px-4 pt-16 text-center">
           <p className="text-[#999] text-[15px] py-20">공지사항을 불러올 수 없습니다.</p>
           <Link to="/notice" className="btn-outline px-6 py-2.5 text-[14px] rounded-lg">
             목록으로
@@ -26,7 +26,7 @@ export default function NoticeDetailPage() {
 
   return (
     <div className="w-full bg-[#FCFBF9] min-h-screen pb-28">
-      <div className="max-w-[820px] mx-auto px-4 pt-16">
+      <div className="max-w-[860px] mx-auto px-4 pt-16">
 
         {/* 뒤로가기 */}
         <Link

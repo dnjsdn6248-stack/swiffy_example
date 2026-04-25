@@ -60,8 +60,6 @@ src/
 │       │   ├── Header.jsx        2계층 GNB: 상단(STORE·베스트셀러·브랜드스토리 고정) + Store 서브네비(카테고리 API 동적, /product/list 한정)
 │       │   ├── Footer.jsx
 │       │   └── SearchBar.jsx
-│       ├── notice/
-│       │   └── NoticeAccordionItem.jsx  공지 아코디언 아이템 (열릴 때 상세 API fetch)
 │       ├── review/
 │       │   ├── ReviewItem.jsx
 │       │   ├── ReviewList.jsx
@@ -90,7 +88,8 @@ src/
 │   ├── ReviewPage.jsx            /review
 │   ├── BrandStoryPage.jsx        /brand-story
 │   ├── CSPage.jsx                /cs
-│   ├── NoticePage.jsx            /notice (아코디언 방식, NoticeDetailPage 미사용)
+│   ├── NoticePage.jsx            /notice
+│   ├── NoticeDetailPage.jsx      /notice/:id
 │   ├── TermsPage.jsx             /terms
 │   └── PrivacyPage.jsx           /privacy
 │
@@ -132,6 +131,7 @@ BrowserRouter
         │   ├── /brand-story       BrandStoryPage
         │   ├── /cs                CSPage
         │   ├── /notice            NoticePage
+        │   ├── /notice/:id        NoticeDetailPage
         │   ├── /terms             TermsPage
         │   ├── /privacy           PrivacyPage
         │   │

@@ -1,24 +1,25 @@
 # Notice 도메인 명세
 
-기준일: 2026-04-25
+기준일: 2026-04-23
 
 ---
 
 ## 개요
 
 공지사항(Notice) 도메인. 고객센터(`/cs`) 하위 커뮤니티 메뉴로 진입하며,
-`NoticePage` 단일 페이지로 구성된다. 목록에서 항목 클릭 시 **아코디언** 방식으로 인라인 펼침.
+NoticePage과 NoticeDetailPage로 구성된다.
 
 - **목록** — Search Server(`searchApi.js`) `useSearchNoticesQuery` 사용
-- **상세(아코디언)** — `NoticeAccordionItem` 컴포넌트, 열릴 때 `useGetNoticeDetailQuery` 호출
+- **상세** — 별도 서버(`noticeApi.js`) `useGetNoticeDetailQuery` 사용
 
 ---
 
 ## 라우트
 
-| 경로      | 컴포넌트     | 보호        |
-| --------- | ------------ | ----------- |
-| `/notice` | `NoticePage` | 없음 (공개) |
+| 경로          | 컴포넌트           | 보호        |
+| ------------- | ------------------ | ----------- |
+| `/notice`     | `NoticePage`       | 없음 (공개) |
+| `/notice/:id` | `NoticeDetailPage` | 없음 (공개) |
 
 ---
 
@@ -57,11 +58,6 @@
   "totalElements": 15,
   "totalPages": 3,
   "currentPage": 0,
-  "size": 10,
-  "isFirst": true,
-  "isLast": false,
-  "hasNext": true,
-  "hasPrevious": false,
   "extra": { "menuTitle": "NOTICE" },
   "data": [
     {
@@ -190,7 +186,7 @@
 | 3개월   | `세달`     |        |
 | 전체    | `전체`     |        |
 
-- 선택 즉시 서버 재요청 + 페이지 1로 리셋 + 열린 아코디언 초기화
+- 선택 즉시 서버 재요청 + 페이지 1로 리셋
 
 ### 드롭다운 2 — 검색 기준 (`searchType`) ✅ 확정
 
@@ -199,26 +195,19 @@
 | 제목    | `제목`     |   ✅   |
 | 내용    | `내용`     |        |
 
-- 검색 버튼 누를 때만 `keyword`와 함께 전송 (드롭다운 변경 즉시 재요청 없음)
+- 검색 버튼 누를 때 `keyword`와 함께 전송
 - `keyword`가 없으면 `searchType` 미전송
-- 구현: UI 상태(`searchType`)와 쿼리 반영 상태(`committedType`) 분리 — 버튼 클릭 시에만 커밋
 
 ### 검색어 입력 + 버튼
 
 - 입력창에 검색어 작성 후 검색 버튼 클릭 시 서버 요청
-- 검색어는 `trim()` 처리 후 전송 (앞뒤 공백 제거, 공백만 입력 시 keyword 미전송)
-- 검색 시 페이지 1로 리셋, 열린 아코디언 초기화
-- 구현: UI 상태(`inputValue`)와 쿼리 반영 상태(`keyword`) 분리 — 버튼 클릭 시에만 커밋 (`searchType`/`committedType` 패턴과 동일)
+- 검색 시 페이지 1로 리셋
 
 ---
 
 ## 비즈니스 규칙
 
 - 공지는 `id` 번호 순서대로 표시 (고정공지는 매 페이지 상단 우선 노출)
-- 고정공지: `isPinned: true` 항목 — 헤더 행 primary 색상 강조 + 아코디언 본문에 "공지" 배지 표시
-- 아코디언 본문: 이미지 먼저 노출 → 텍스트 → actions CTA 버튼 순서
-- 이미지: `max-w-[820px] w-full h-auto`
-- actions: `sortOrder` 오름차순 정렬 후 렌더링
-- 한 번에 하나의 항목만 열림 (다른 항목 클릭 시 기존 항목 자동 닫힘)
-- 페이지 이동·검색 시 열린 아코디언 자동 초기화
+- 고정공지: `isPinned: true` 항목 — 상세 헤더에 "공지" 배지 표시
+- 상세 페이지: 이미지 먼저 노출, 이미지 없으면 텍스트 바로 표시
 - 페이지네이션: 서버 사이드, 공유 `Pagination` 컴포넌트 사용

@@ -27,6 +27,7 @@ import ReviewPage from './pages/ReviewPage'
 import TermsPage from './pages/TermsPage'
 import PrivacyPage from './pages/PrivacyPage'
 import NoticePage from './pages/NoticePage'
+import NoticeDetailPage from './pages/NoticeDetailPage'
 export default function Router() {
   return (
     <BrowserRouter>
@@ -40,6 +41,7 @@ export default function Router() {
             <Route path="/best" element={<BestSellerPage />} />
             <Route path="/cs" element={<CSPage />} />
             <Route path="/notice" element={<NoticePage />} />
+            <Route path="/notice/:id" element={<NoticeDetailPage />} />
             <Route path="/review" element={<ReviewPage />} />
             <Route path="/brand-story" element={<BrandStoryPage />} />
             <Route path="/terms" element={<TermsPage />} />

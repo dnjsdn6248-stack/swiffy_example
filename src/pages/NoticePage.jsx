@@ -1,23 +1,22 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { ChevronRight } from 'lucide-react'
 import { useSearchNoticesQuery } from '@/api/searchApi'
 import Pagination from '@/shared/components/Pagination'
 import Spinner from '@/shared/components/Spinner'
 import { NOTICE_SEARCH_RANGES, NOTICE_SEARCH_TYPES } from '@/shared/utils/constants'
-import NoticeAccordionItem from '@/features/components/notice/NoticeAccordionItem'
 
 export default function NoticePage() {
-  const [page, setPage]               = useState(1) // 1-based (Pagination 컴포넌트 기준)
-  const [keyword, setKeyword]         = useState('')
-  const [inputValue, setInput]        = useState('')
-  const [searchRange, setRange]       = useState(NOTICE_SEARCH_RANGES[0].value) // '일주일'
-  const [searchType, setType]         = useState(NOTICE_SEARCH_TYPES[0].value)  // UI 상태 (드롭다운)
-  const [committedType, setCommitted] = useState(NOTICE_SEARCH_TYPES[0].value)  // 쿼리 반영 상태 (버튼 클릭 시)
-  const [openId, setOpenId]           = useState(null)
+  const [page, setPage]         = useState(1) // 1-based (Pagination 컴포넌트 기준)
+  const [keyword, setKeyword]   = useState('')
+  const [inputValue, setInput]  = useState('')
+  const [searchRange, setRange] = useState(NOTICE_SEARCH_RANGES[0].value) // '일주일'
+  const [searchType, setType]   = useState(NOTICE_SEARCH_TYPES[0].value)  // '제목'
 
   const { data, isLoading, isError } = useSearchNoticesQuery({
     page: page - 1, // 0-based API
     searchRange,
-    ...(keyword && { keyword, searchType: committedType }),
+    ...(keyword && { keyword, searchType }),
   })
 
   // normalizePage 후 정규화된 필드 사용
@@ -26,15 +25,12 @@ export default function NoticePage() {
 
   const handleSearch = (e) => {
     e.preventDefault()
-    setKeyword(inputValue.trim())
-    setCommitted(searchType)
+    setKeyword(inputValue)
     setPage(1)
-    setOpenId(null)
   }
 
   const handlePageChange = (newPage) => {
     setPage(newPage)
-    setOpenId(null)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -63,12 +59,28 @@ export default function NoticePage() {
           )}
 
           {!isLoading && notices.map((notice, index) => (
-            <NoticeAccordionItem
+            <Link
               key={notice.id ?? `notice-${index}`}
-              notice={notice}
-              isOpen={openId === notice.id}
-              onToggle={() => setOpenId(openId === notice.id ? null : notice.id)}
-            />
+              to={notice.id ? `/notice/${notice.id}` : '#'}
+              className="flex items-center justify-between py-4 px-2 border-b border-[#f0f0f0] hover:bg-[#f9f9f9] transition-colors group"
+            >
+              <div className="flex items-center gap-5 text-[14px] flex-1 min-w-0">
+                <span className={`shrink-0 min-w-[40px] text-center text-[13px] font-bold ${notice.isPinned ? 'text-primary' : 'text-[#bbb]'}`}>
+                  {notice.displayLabel}
+                </span>
+                <span className="truncate text-[#444] font-medium group-hover:text-primary transition-colors">
+                  {notice.title}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 shrink-0 ml-4">
+                {notice.createdAt && (
+                  <span className="text-[12px] text-[#bbb] hidden sm:block">
+                    {notice.createdAt}
+                  </span>
+                )}
+                <ChevronRight size={16} className="text-[#ccc] group-hover:text-primary transition-colors" />
+              </div>
+            </Link>
           ))}
         </div>
 
@@ -81,7 +93,7 @@ export default function NoticePage() {
           <div className="flex gap-2">
             <select
               value={searchRange}
-              onChange={(e) => { setRange(e.target.value); setPage(1); setOpenId(null) }}
+              onChange={(e) => { setRange(e.target.value); setPage(1) }}
               className="flex-1 px-3 py-2.5 border border-[#ddd] rounded-lg text-[14px] bg-white text-[#555] focus:outline-none focus:border-primary"
             >
               {NOTICE_SEARCH_RANGES.map((r) => (
