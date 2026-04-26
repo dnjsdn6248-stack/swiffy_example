@@ -297,11 +297,11 @@ const w = tp.widgets({ customerKey: String(user.userId) })
 - 허용 문자: 알파벳·숫자·`@`, `.`, `_`, `-`, `+`, `=` (2~300자)
 - 이메일·전화번호 등 추측 가능한 값은 customerKey로 사용 금지 (Toss 정책)
 
-### `requestPayment` 현재 파라미터 상태 (2026-04-25)
+### `requestPayment` 현재 파라미터 상태 (2026-04-26)
 
 ```js
 await widgets.requestPayment({
-  orderId: `order-${orderId}`,   // ⚠️ prefix 포함 — PaymentSuccessPage 호환 문제 발생 ([CHECKOUT-04])
+  orderId: `order-${orderId}`,   // prefix 포함 — PaymentSuccessPage에서 replace('order-','') 로 제거 처리
   orderName,
   customerName: user.name ?? '',
   customerEmail: user.email ?? '',
@@ -328,25 +328,21 @@ await widgets.requestPayment({
 ## 프론트 연동 흐름
 
 ```
-1. createOrder              → POST /orders/get                  → orderId (Long) 획득
+1. createOrder              → POST /orders/get                  → orderId (Snowflake Long) 획득
 2. preparePayment           → POST /payments/prepare            → 결제 레코드 생성 (status: READY)
 3. requestPayment           → Toss 위젯 호출 (orderId: `order-${orderId}`)  → 사용자 결제 진행
 4. successUrl 리다이렉트    → /payment/success?paymentKey=...&orderId=order-{id}&amount=...
-5. SSE 구독 시작            → GET /payments/orders/{orderId}/events  → payment-status 이벤트 대기
-6. confirmPayment           → POST /payments/confirm            → 결제 처리 트리거
-7. SSE: payment-status      → status: PAID / FAILED             → UI 상태 전환 (primary)
-   (SSE 미수신 fallback)    → confirm 응답 status: PAID         → UI 상태 전환 (fallback)
-8. navigate                 → /order/detail/:orderId
+5. PaymentSuccessPage       → orderId = rawOrderId.replace('order-','')  → 순수 숫자 문자열 추출
+6. SSE 구독 시작            → GET /payments/orders/{orderId}/events  → payment-status 이벤트 대기
+7. confirmPayment           → POST /payments/confirm            → 결제 처리 트리거
+8. SSE: payment-status      → status: PAID / FAILED             → UI 상태 전환 (primary)
+   (SSE 미수신 fallback)    → confirm 응답 status: APPROVED     → UI 상태 전환 (fallback)
+9. navigate                 → /order/detail/:orderId
 ```
 
-> ⚠️ **알려진 문제 ([CHECKOUT-04])**: step 3에서 Toss `requestPayment`에 `` `order-${orderId}` `` 형식으로 전달하므로,  
-> step 4 이후 URL 파라미터 `orderId`가 `"order-123"` 문자열이 된다.  
-> `PaymentSuccessPage`는 이를 `Number("order-123") = NaN`으로 변환하여 `confirmPayment`·SSE 모두 실패한다.
+> ✅ **[CHECKOUT-04] 해결됨 (2026-04-26)**: `PaymentSuccessPage`에서 `rawOrderId.replace('order-', '')`로 prefix를 제거한 뒤 SSE URL·confirm body에 전달. `Number()` 변환 없이 string 그대로 사용하므로 [PAYMENT-01] Snowflake ID 정밀도 손실도 방지됨.
 
-> ⚠️ **알려진 문제 ([PAYMENT-01])**: `orderId`가 Snowflake ID(64비트, 약 10¹⁸ 규모) 형태일 경우,  
-> `Number(orderId)` 변환 시 JS `Number.MAX_SAFE_INTEGER`(약 9×10¹⁵)를 초과하여 정밀도가 손실된다.  
-> 손실된 값이 `confirmPayment` body·SSE URL에 사용되면 서버가 주문을 찾지 못해 결제 승인 후에도 스피너가 무한 대기 상태가 된다.  
-> **수정 방향**: `Number(orderId)` 대신 string 그대로 전달 (SSE URL은 템플릿 리터럴이므로 string 전달 시 정상 동작).
+> ℹ️ **confirm fallback 실제 status 값**: `'APPROVED'` (docs 기존 `'PAID'`는 오기. 실제 서버 응답 기준 2026-04-26 확인).
 
 > - `prepare`와 `confirm`은 모두 프론트가 직접 호출한다.
 > - 외부 공개 경로는 모두 `gatewayserver` 기준 `/api/v1/payments/**`이다. 내부 `paymentserver` 경로 `/payments/**`를 직접 호출하지 않는다.
@@ -376,7 +372,7 @@ Toss가 `successUrl`로 리다이렉트할 때 아래 세 파라미터를 쿼리
 | 파라미터 | 타입 | 설명 |
 |---|---|---|
 | `paymentKey` | String | Toss가 발급한 결제 키 — confirm body에 그대로 전달 |
-| `orderId` | String (→ Number) | 주문 ID — 현재 `"order-{id}"` 형식으로 수신됨 (⚠️ [CHECKOUT-04] 참고) |
+| `orderId` | String | Toss가 `"order-{id}"` 형식으로 전달. `rawOrderId.replace('order-','')` 로 순수 숫자 문자열 추출 (예: `"1486476056744642600"`) |
 | `amount` | String (→ Number) | 결제 금액 — `Number(amount)`로 변환 후 전달 |
 
 ```js
@@ -440,10 +436,10 @@ SSE가 먼저 연결을 열어두고, confirm이 서버 측 결제 처리를 트
 ### SSE 구독
 
 ```js
-const { data: sseData } = useSubscribePaymentEventsQuery(Number(orderId), { skip: !orderId })
+const { data: sseData } = useSubscribePaymentEventsQuery(orderId, { skip: !orderId })
 ```
 
-> ⚠️ `Number(orderId)` 는 Snowflake ID 수준의 값에서 정밀도를 잃는다 ([PAYMENT-01]). string 그대로 전달하는 것이 안전하다.
+> ✅ `orderId`를 string 그대로 전달 — Snowflake ID 정밀도 손실 없음 ([PAYMENT-01] 방지, 2026-04-26 팀원 커밋 반영).
 
 - `orderId`가 유효한 경우에만 SSE 연결 (`skip: !orderId`)
 - RTK Query `onCacheEntryAdded` 내부에서 `new EventSource()` 생성 → 실제 HTTP 연결 수립
@@ -457,7 +453,7 @@ const { data: sseData } = useSubscribePaymentEventsQuery(Number(orderId), { skip
 | `status` | 전환 조건 | UI |
 |---|---|---|
 | `'loading'` | 초기값 | `<Spinner />` + "결제를 승인하고 있습니다..." |
-| `'success'` | SSE `status: 'PAID'` (primary) 또는 confirm 응답 `status: 'PAID'` (fallback) | 체크 아이콘 + "결제가 완료되었습니다" + 2초 후 `/order/detail/:orderId` 이동 |
+| `'success'` | SSE `status: 'PAID'` (primary) 또는 confirm 응답 `status: 'APPROVED'` (fallback) | 체크 아이콘 + "결제가 완료되었습니다" + 2초 후 `/order/detail/:orderId` 이동 |
 | `'error'` | SSE `status: 'FAILED'` 또는 파라미터 누락 또는 confirm 실패 | X 아이콘 + 오류 메시지 + [장바구니로 이동 / 주문 내역 보기] 버튼 |
 
 > 상태 전환 시 이미 `'loading'`이 아니면 무시 — SSE와 confirm이 동시에 결과를 내려도 중복 전환 없음.

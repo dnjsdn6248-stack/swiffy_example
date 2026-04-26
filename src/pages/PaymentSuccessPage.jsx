@@ -19,10 +19,6 @@ export default function PaymentSuccessPage() {
   const [errorMsg, setErrorMsg] = useState('')
   const calledRef = useRef(false)
 
-  
-
-  console.log("orderId={}", orderId);
-
   // SSE 구독 — orderId 유효 시에만 연결
   const { data: sseData } = useSubscribePaymentEventsQuery(
     orderId,
